@@ -1,6 +1,7 @@
 import express from "express";
-import { addLawyer } from "../controllers/adminController.js";
+import { addLawyer, loginAdmin } from "../controllers/adminController.js";
 import upload from "../middlewares/multer.js";
+import authAdmin from "../middlewares/authAdmin.js";
 
 const adminRouter = express.Router();
 
@@ -12,8 +13,11 @@ adminRouter.post(
     console.log("POST /add-lawyer route matched!");
     next();
   },
+  authAdmin,
   upload.single("image"),
   addLawyer
 );
+
+adminRouter.post("/login", loginAdmin);
 
 export default adminRouter;

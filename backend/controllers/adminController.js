@@ -2,6 +2,8 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import lawyerModel from "../models/lawyerModel.js";
+import jwt from "jsonwebtoken";
+
 // API for adding lawyer
 const addLawyer = async (req, res) => {
   try {
@@ -120,4 +122,24 @@ const addLawyer = async (req, res) => {
   }
 };
 
-export { addLawyer };
+// API For admin Login
+
+const loginAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD
+    ) {
+      const token = jwt.sign(email + password, process.env.JWT_SECRET);
+      res.json({ success: true, token });
+    } else {
+      res.json({ success: false, message: "Invalid credentials" });
+    }
+  } catch (error) {
+    console.log("Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+export { addLawyer, loginAdmin };
