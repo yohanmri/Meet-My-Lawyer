@@ -11,6 +11,8 @@ secretkey = iXjk7PJK4Xbe-x7RCri9pM_ZhfY
 api key = 581616798131488
 name = dynsrrqgo
 
-
 //Base 64
 https://www.base64-image.de/
+
+//CSS - Notification
+Toast Notification
