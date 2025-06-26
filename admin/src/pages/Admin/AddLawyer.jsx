@@ -107,6 +107,29 @@ export default function LawyerRegistrationForm() {
 
             if (data.success) {
                 toast.success(data.message)
+                setLawyerImg(false)
+                setName('')
+                setEmail('')
+                setPhone('')
+                setGender('')
+                setDateOfBirth('')
+                setPassword('')
+                setSpeciality('General Practice')
+                setDegree('')
+                setOfficePhone('')
+                setLicenseNumber('')
+                setBarAssociation('')
+                setExperience('')
+                setProfessionalType('')
+                setConsultationFees('')
+                setPrimaryCourt('')
+                setSecondaryCourt('')
+                setDistrict('')
+                setAddress('')
+                setLatitude('')
+                setLongitude('')
+                setAdditionalInfo(''
+                )
             } else {
                 toast.error(data.message)
             }
