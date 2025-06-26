@@ -2,6 +2,8 @@ import React, { useContext, useState } from 'react';
 import { assets } from '../../assets/assets'
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify'
+import axios from 'axios';
+
 
 export default function LawyerRegistrationForm() {
 
@@ -100,6 +102,15 @@ export default function LawyerRegistrationForm() {
                 console.log(`${key}: ${value}`);
             }
 
+
+            const { data } = await axios.post(backendUrl + '/api/admin/add-lawyer', formData, { headers: { aToken } })
+
+            if (data.success) {
+                toast.success(data.message)
+            } else {
+                toast.error(data.message)
+            }
+
             // TODO: Add actual API call here
             /*
             const response = await fetch(`${backendUrl}/api/admin/add-lawyer`, {
@@ -123,6 +134,10 @@ export default function LawyerRegistrationForm() {
             console.error('Error:', error);
             toast.error('An error occurred while adding the lawyer');
         }
+
+
+
+
     }
 
     return (
