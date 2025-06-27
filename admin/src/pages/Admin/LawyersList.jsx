@@ -2,8 +2,9 @@
 import React, { useContext, useEffect } from 'react'
 import { AdminContext } from '../../context/AdminContext'
 
+
 const LawyersList = () => {
-    const { lawyers, aToken, getAllLawyers } = useContext(AdminContext)
+    const { lawyers, aToken, getAllLawyers, changeAvailability } = useContext(AdminContext)
 
     useEffect(() => {
         if (aToken) {
@@ -32,9 +33,11 @@ const LawyersList = () => {
                             <p className='text-sm text-gray-600'>{item.speciality}</p>
                             <div className='flex items-center gap-2 mt-2 p-2 rounded'>
                                 <input
+                                    onChange={() => changeAvailability(item._id)}
                                     className="accent-indigo-500"
-
-                                    type="checkbox" checked={item.available} readOnly />
+                                    type="checkbox"
+                                    checked={item.available}
+                                />
                                 <p className='text-sm'>Available</p>
                             </div>
                         </div>
