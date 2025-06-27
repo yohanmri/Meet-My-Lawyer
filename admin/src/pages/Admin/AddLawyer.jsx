@@ -114,7 +114,6 @@ export default function LawyerRegistrationForm() {
                 setGender('')
                 setDateOfBirth('')
                 setPassword('')
-                setSpeciality('General Practice')
                 setDegree('')
                 setOfficePhone('')
                 setLicenseNumber('')
@@ -154,8 +153,9 @@ export default function LawyerRegistrationForm() {
             */
 
         } catch (error) {
-            console.error('Error:', error);
-            toast.error('An error occurred while adding the lawyer');
+            toast.error('error.message');
+            console.log('Error:', error);
+
         }
 
 
