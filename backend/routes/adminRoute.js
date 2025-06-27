@@ -1,5 +1,9 @@
 import express from "express";
-import { addLawyer, loginAdmin } from "../controllers/adminController.js";
+import {
+  addLawyer,
+  allLawyers,
+  loginAdmin,
+} from "../controllers/adminController.js";
 import upload from "../middlewares/multer.js";
 import authAdmin from "../middlewares/authAdmin.js";
 
@@ -19,5 +23,6 @@ adminRouter.post(
 );
 
 adminRouter.post("/login", loginAdmin);
+adminRouter.post("/all-lawyers", authAdmin, allLawyers);
 
 export default adminRouter;
