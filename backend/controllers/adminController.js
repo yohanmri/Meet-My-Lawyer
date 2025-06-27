@@ -2,6 +2,7 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import lawyerModel from "../models/lawyerModel.js";
+
 import jwt from "jsonwebtoken";
 
 // API for adding lawyer
