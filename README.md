@@ -16,3 +16,6 @@ https://www.base64-image.de/
 
 //CSS - Notification
 Toast Notification
+
+//Crop part
+npm install react-easy-crop

@@ -3,6 +3,7 @@ import { assets } from '../../assets/assets'
 import { AdminContext } from '../../context/AdminContext';
 import { toast } from 'react-toastify'
 import axios from 'axios';
+import Cropper from 'react-easy-crop'
 
 
 export default function LawyerRegistrationForm() {
@@ -30,8 +31,107 @@ export default function LawyerRegistrationForm() {
     const [longitude, setLongitude] = useState('')
     const [languages, setLanguages] = useState([])
     const [additionalInfo, setAdditionalInfo] = useState('')
-
+    const [cropModalOpen, setCropModalOpen] = useState(false)
+    const [imageToCrop, setImageToCrop] = useState(null)
+    const [crop, setCrop] = useState({ x: 0, y: 0 })
+    const [zoom, setZoom] = useState(1)
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
     const { backendUrl, aToken } = useContext(AdminContext)
+
+    // Helper function to create image from URL
+    const createImage = (url) =>
+        new Promise((resolve, reject) => {
+            const image = new Image()
+            image.addEventListener('load', () => resolve(image))
+            image.addEventListener('error', (error) => reject(error))
+            image.setAttribute('crossOrigin', 'anonymous')
+            image.src = url
+        })
+
+    // Helper function to get cropped image
+    const getCroppedImg = async (imageSrc, pixelCrop) => {
+        const image = await createImage(imageSrc)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        canvas.width = pixelCrop.width
+        canvas.height = pixelCrop.height
+
+        ctx.drawImage(
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            pixelCrop.width,
+            pixelCrop.height
+        )
+
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => {
+                resolve(blob)
+            }, 'image/jpeg', 0.9)
+        })
+    }
+
+    // Handle image selection
+    const handleImageSelect = (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Please select a valid image file (JPEG, PNG, WebP)')
+                return
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('Image size should be less than 5MB')
+                return
+            }
+
+            setImageToCrop(file)
+            setCropModalOpen(true)
+        }
+    }
+
+    // Handle crop complete
+    const onCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels)
+    }
+
+    // Apply crop
+    const applyCrop = async () => {
+        try {
+            const croppedImage = await getCroppedImg(
+                URL.createObjectURL(imageToCrop),
+                croppedAreaPixels
+            )
+
+            // Create a new File object from the blob
+            const croppedFile = new File([croppedImage], imageToCrop.name, {
+                type: imageToCrop.type,
+            })
+
+            setLawyerImg(croppedFile)
+            setCropModalOpen(false)
+            setImageToCrop(null)
+            setCrop({ x: 0, y: 0 })
+            setZoom(1)
+        } catch (error) {
+            console.error('Error cropping image:', error)
+            toast.error('Error cropping image')
+        }
+    }
+
+    // Cancel crop
+    const cancelCrop = () => {
+        setCropModalOpen(false)
+        setImageToCrop(null)
+        setCrop({ x: 0, y: 0 })
+        setZoom(1)
+    }
 
     const onSubmitHandler = async (event) => {
         event.preventDefault()
@@ -184,12 +284,12 @@ export default function LawyerRegistrationForm() {
                                     <label htmlFor="lawyer-img" className='cursor-pointer'>
                                         <img
                                             src={lawyerImg ? URL.createObjectURL(lawyerImg) : (assets?.upload_area || '/default-upload.png')}
-                                            className='w-16 bg-gray-100 rounded-full cursor-pointer'
+                                            className='w-56 h-48 object-cover object-top bg-gray-100 rounded cursor-pointer'
                                             alt="Upload area"
                                         />
                                     </label>
                                     <input
-                                        onChange={(e) => setLawyerImg(e.target.files[0])}
+                                        onChange={handleImageSelect}
                                         type="file"
                                         id="lawyer-img"
                                         accept="image/*"
@@ -574,6 +674,69 @@ export default function LawyerRegistrationForm() {
                     </div>
                 </div>
             </div>
+            {/* Image Crop Modal */}
+            {cropModalOpen && imageToCrop && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+                        <h3 className="text-xl font-semibold mb-4 text-center">Crop Your Image</h3>
+
+                        {/* Cropper Container */}
+                        <div className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                            <Cropper
+                                image={URL.createObjectURL(imageToCrop)}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={7 / 6}
+                                onCropChange={setCrop}
+                                onCropComplete={onCropComplete}
+                                onZoomChange={setZoom}
+                                cropShape="rect"
+                                showGrid={true}
+                            />
+                        </div>
+
+                        {/* Zoom Control */}
+                        <div className="mt-4 flex items-center justify-center gap-4">
+                            <span className="text-sm text-gray-600">Zoom:</span>
+                            <input
+                                type="range"
+                                value={zoom}
+                                min={1}
+                                max={3}
+                                step={0.1}
+                                onChange={(e) => setZoom(e.target.value)}
+                                className="w-48"
+                            />
+                            <span className="text-sm text-gray-600">{Math.round(zoom * 100)}%</span>
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="mt-4 text-center text-sm text-gray-600">
+                            <p>• Drag the image to position it</p>
+                            <p>• Use the zoom slider or scroll wheel to resize</p>
+                            <p>• The crop area is fixed to 7:6 ratio for optimal display</p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex justify-center gap-4">
+                            <button
+                                type="button"
+                                onClick={cancelCrop}
+                                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={applyCrop}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Apply Crop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </form>
     );
 }

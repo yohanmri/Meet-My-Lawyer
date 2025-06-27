@@ -19,7 +19,7 @@ const LawyersList = () => {
                     <div className=' border border-indigo-200 rounded-xl w-56 overflow-hidden cursor-pointer group' key={index}>
                         {/* Display the lawyer's image */}
                         <img
-                            className='w-full h-48 object-cover object-top bg-indigo-50 group-hover:bg-primary transition-all duration-500'
+                            className='w-56 h-48 object-cover object-top bg-indigo-50 group-hover:bg-primary transition-all duration-500'
                             src={item.image}
                             alt={item.name || 'Lawyer'}
                             onError={(e) => {
