@@ -1,13 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { assets } from '../assets/assets'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { AppContext } from '../context/AppContext'  // Added AppContext import
 
 const Navbar = () => {
 
     const navigate = useNavigate();
+    const { token, setToken } = useContext(AppContext)
 
     const [showMenu, setShowMenu] = useState(false)
-    const [token, setToken] = useState(true)
+    const logout = () => {
+        setToken(false)
+        localStorage.removeItem('token')
+    }
 
     return (
         <div className='flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400'>
@@ -41,7 +46,7 @@ const Navbar = () => {
                                 <div className='min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4'>
                                     <p onClick={() => navigate('my-profile')} className='hover:text-black cursor-pointer'>My Profile</p>
                                     <p onClick={() => navigate('my-appointments')} className='hover:text-black cursor-pointer'>My Appointments</p>
-                                    <p onClick={() => setToken(false)} className='hover:text-black cursor-pointer'>Logout</p>
+                                    <p onClick={logout} className='hover:text-black cursor-pointer'>Logout</p>
                                 </div>
                             </div>
                         </div>
@@ -60,10 +65,10 @@ const Navbar = () => {
                         <img className='w-7' onClick={() => setShowMenu(false)} src={assets.cross_icon} alt="" />
                     </div>
                     <ul className='flex flex-col items-center gap-2 mt-5 px-5 text-lg font-medium'>
-                        <NavLink onClick={() => setShowMenu(false)} to='/'><p className='px-4 py-2 rounded full inline-block'>HOME</p></NavLink>
-                        <NavLink onClick={() => setShowMenu(false)} to='/lawyers'><p className='px-4 py-2 rounded full inline-block'>ALL LAWYERS</p></NavLink>
-                        <NavLink onClick={() => setShowMenu(false)} to='/about'><p className='px-4 py-2 rounded full inline-block'>ABOUT</p></NavLink>
-                        <NavLink onClick={() => setShowMenu(false)} to='/contact'><p className='px-4 py-2 rounded full inline-block'>CONTACT</p></NavLink>
+                        <NavLink onClick={() => setShowMenu(false)} to='/'><p className='px-4 py-2 rounded-full inline-block'>HOME</p></NavLink>
+                        <NavLink onClick={() => setShowMenu(false)} to='/lawyers'><p className='px-4 py-2 rounded-full inline-block'>ALL LAWYERS</p></NavLink>
+                        <NavLink onClick={() => setShowMenu(false)} to='/about'><p className='px-4 py-2 rounded-full inline-block'>ABOUT</p></NavLink>
+                        <NavLink onClick={() => setShowMenu(false)} to='/contact'><p className='px-4 py-2 rounded-full inline-block'>CONTACT</p></NavLink>
                     </ul>
                 </div>
             </div>

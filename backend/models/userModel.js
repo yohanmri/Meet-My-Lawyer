@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
   dob: { type: String, default: "Not Selected" },
   district: { type: String, required: false },
   phone: { type: String, default: "000 000 0000" },
+  latitude: { type: Number, required: false },
+  longitude: { type: Number, required: false },
 });
 
 const userModel = mongoose.models.user || mongoose.model("user", userSchema);
