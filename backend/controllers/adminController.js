@@ -37,6 +37,8 @@ const addLawyer = async (req, res) => {
       court2,
       date,
       slots_booked,
+      method, // Add this
+      online_link, // Add this
     } = req.body;
     const imageFile = req.file;
 
@@ -70,7 +72,13 @@ const addLawyer = async (req, res) => {
         message: "Please Enter a Strong Password",
       });
     }
-
+    //Online Lind
+    if (method === "online" && !online_link) {
+      return res.json({
+        success: false,
+        message: "Online link is required for online consultations",
+      });
+    }
     // Hashing Lawyer's password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -109,6 +117,8 @@ const addLawyer = async (req, res) => {
       court2,
       date: Date.now(),
       slots_booked: slots_booked || {},
+      method, // Add this
+      online_link, // Add this
     };
 
     const newLawyer = new lawyerModel(lawyerData);

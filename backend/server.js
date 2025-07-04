@@ -4,6 +4,7 @@ import "dotenv/config";
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
 import adminRouter from "./routes/adminRoute.js";
+import lawyerRouter from "./routes/lawyerRoute.js";
 
 // app config
 const app = express();
@@ -23,6 +24,7 @@ app.use("/api/admin", (req, res, next) => {
 
 // api endpoints
 app.use("/api/admin", adminRouter);
+app.use("/api/lawyer", lawyerRouter);
 
 app.get("/", (req, res) => {
   res.send("API WORKING");

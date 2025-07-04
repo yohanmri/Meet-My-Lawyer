@@ -10,6 +10,7 @@ import Dashboard from './pages/Admin/Dashboard';
 import AllApointments from './pages/Admin/AllApointments';
 import AddLawyer from './pages/Admin/AddLawyer';
 import LawyersList from './pages/Admin/LawyersList';
+import GISdashboard from './pages/Admin/GISdashboard';
 const App = () => {
 
   const { aToken } = useContext(AdminContext)
@@ -23,6 +24,7 @@ const App = () => {
         <Routes>
           <Route path='/' element={<></>} />
           <Route path='/admin-dashboard' element={<Dashboard />} />
+          <Route path='/gis-dashboard' element={<GISdashboard />} />
           <Route path='/all-appointments' element={<AllApointments />} />
           <Route path='/add-lawyer' element={<AddLawyer />} />
           <Route path='/lawyer-list' element={<LawyersList />} />
