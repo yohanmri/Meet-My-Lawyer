@@ -29,6 +29,12 @@ const lawyerSchema = new mongoose.Schema(
     court2: { type: String, required: false }, // Optional second court
     date: { type: Number, required: true },
     slots_booked: { type: Object, default: {} },
+    method: {
+      type: String,
+      required: true,
+      enum: ["online", "onsite", "both"],
+    },
+    online_link: { type: String, required: false },
   },
   { minimize: false }
 );

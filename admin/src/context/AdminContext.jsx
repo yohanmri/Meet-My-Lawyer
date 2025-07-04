@@ -21,6 +21,7 @@ const AdminContextProvider = (props) => {
             if (data.success) {
                 setLawyers(data.lawyers)
                 console.log(data.lawyers)
+                getAllLawyers()
             } else {
                 toast.error(data.message)
             }

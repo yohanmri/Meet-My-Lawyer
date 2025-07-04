@@ -24,7 +24,8 @@ export default function LawyerRegistrationForm() {
     const [professionalType, setProfessionalType] = useState('Attorney-at-Law')
     const [consultationFees, setConsultationFees] = useState('')
     const [primaryCourt, setPrimaryCourt] = useState('')
-    const [secondaryCourt, setSecondaryCourt] = useState('')
+    const [method, setMethod] = useState('both')
+    const [onlineLink, setOnlineLink] = useState('')
     const [district, setDistrict] = useState('Colombo')
     const [address, setAddress] = useState('')
     const [latitude, setLatitude] = useState('')
@@ -174,8 +175,10 @@ export default function LawyerRegistrationForm() {
             formData.append('legal_professionals', professionalType);
             formData.append('fees', Number(consultationFees));
             formData.append('court1', primaryCourt);
-            formData.append('court2', secondaryCourt);
+            formData.append('online_link', onlineLink);
             formData.append('district', district);
+            formData.append('method', method);
+
 
             // Address as JSON string since schema expects Object
             formData.append('address', JSON.stringify({
@@ -222,13 +225,13 @@ export default function LawyerRegistrationForm() {
                 setProfessionalType('')
                 setConsultationFees('')
                 setPrimaryCourt('')
-                setSecondaryCourt('')
+                setOnlineLink('')
+                setMethod('both')
                 setDistrict('')
                 setAddress('')
                 setLatitude('')
                 setLongitude('')
-                setAdditionalInfo(''
-                )
+                setAdditionalInfo('')
             } else {
                 toast.error(data.message)
             }
@@ -571,14 +574,29 @@ export default function LawyerRegistrationForm() {
                                             required
                                         />
                                     </div>
+
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Secondary Court (Optional)</p>
-                                        <input
-                                            type="text"
-                                            placeholder='Secondary Court'
+                                        <p className='text-[#515151] text-sm mb-1'>Consultation Method</p>
+                                        <select
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            value={secondaryCourt}
-                                            onChange={(e) => setSecondaryCourt(e.target.value)}
+                                            value={method}
+                                            onChange={(e) => setMethod(e.target.value)}
+                                            required
+                                        >
+                                            <option value="onsite">Onsite</option>
+                                            <option value="online">Online</option>
+                                            <option value="both">Online & Onsite</option>
+                                        </select>
+                                    </div>
+
+                                    <div className='w-full'>
+                                        <p className='text-[#515151] text-sm mb-1'>Online Meeting Link (Optional)</p>
+                                        <input
+                                            type="url"
+                                            placeholder='https://meet.google.com/your-link or https://zoom.us/j/your-room'
+                                            className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                                            value={onlineLink}
+                                            onChange={(e) => setOnlineLink(e.target.value)}
                                         />
                                     </div>
                                 </div>
