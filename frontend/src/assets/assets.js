@@ -1,10 +1,11 @@
 import appointment_img from "./appointment_img.png";
 import header_img from "./header_img.png";
+import header_img2 from "./header_img2.png";
 import group_profiles from "./group_profiles.png";
 import profile_pic from "./profile_pic.png";
 import contact_image from "./contact_image.png";
 import about_image from "./about_image.png";
-import logo from "./logo.svg";
+import logo from "./logo.png";
 import dropdown_icon from "./dropdown_icon.svg";
 import menu_icon from "./menu_icon.svg";
 import cross_icon from "./cross_icon.png";
@@ -30,16 +31,17 @@ import lawyer12 from "./lawyer12.png";
 import lawyer13 from "./lawyer13.png";
 import lawyer14 from "./lawyer14.png";
 import lawyer15 from "./lawyer15.png";
-import Dermatologist from "./Dermatologist.svg";
-import Gastroenterologist from "./Gastroenterologist.svg";
-import General_physician from "./General_physician.svg";
-import Gynecologist from "./Gynecologist.svg";
-import Neurologist from "./Neurologist.svg";
-import Pediatricians from "./Pediatricians.svg";
+import labor from "./labor.png";
+import commercial from "./commercial.png";
+import family from "./family.png";
+import corporate from "./corporate.png";
+import criminal from "./criminal.png";
+import real_estate from "./real_estate.png";
 
 export const assets = {
   appointment_img,
   header_img,
+  header_img2,
   group_profiles,
   logo,
   chats_icon,
@@ -59,28 +61,28 @@ export const assets = {
 
 export const specialityData = [
   {
-    speciality: "General physician",
-    image: General_physician,
+    speciality: "Family",
+    image: family,
   },
   {
-    speciality: "Gynecologist",
-    image: Gynecologist,
+    speciality: "Corporate",
+    image: corporate,
   },
   {
-    speciality: "Dermatologist",
-    image: Dermatologist,
+    speciality: "labor",
+    image: labor,
   },
   {
-    speciality: "Pediatricians",
-    image: Pediatricians,
+    speciality: "real_estate",
+    image: real_estate,
   },
   {
-    speciality: "Neurologist",
-    image: Neurologist,
+    speciality: "criminal",
+    image: criminal,
   },
   {
-    speciality: "Gastroenterologist",
-    image: Gastroenterologist,
+    speciality: "commercial",
+    image: commercial,
   },
 ];
 
@@ -104,7 +106,7 @@ export const lawyers = [
     _id: "lawyer2",
     name: "Dr. Emily Larson",
     image: lawyer2,
-    speciality: "Gynecologist",
+    speciality: "corporate",
     degree: "MBBS",
     experience: "3 Years",
     about:
@@ -119,7 +121,7 @@ export const lawyers = [
     _id: "lawyer3",
     name: "Dr. Sarah Patel",
     image: lawyer3,
-    speciality: "Dermatologist",
+    speciality: "labor",
     degree: "MBBS",
     experience: "1 Years",
     about:
@@ -134,7 +136,7 @@ export const lawyers = [
     _id: "lawyer4",
     name: "Dr. Christopher Lee",
     image: lawyer4,
-    speciality: "Pediatricians",
+    speciality: "real_estate",
     degree: "MBBS",
     experience: "2 Years",
     about:
@@ -149,7 +151,7 @@ export const lawyers = [
     _id: "lawyer5",
     name: "Dr. Jennifer Garcia",
     image: lawyer5,
-    speciality: "Neurologist",
+    speciality: "criminal",
     degree: "MBBS",
     experience: "4 Years",
     about:
@@ -164,7 +166,7 @@ export const lawyers = [
     _id: "lawyer6",
     name: "Dr. Andrew Williams",
     image: lawyer6,
-    speciality: "Neurologist",
+    speciality: "criminal",
     degree: "MBBS",
     experience: "4 Years",
     about:
@@ -194,7 +196,7 @@ export const lawyers = [
     _id: "lawyer8",
     name: "Dr. Timothy White",
     image: lawyer8,
-    speciality: "Gynecologist",
+    speciality: "corporate",
     degree: "MBBS",
     experience: "3 Years",
     about:
@@ -209,7 +211,7 @@ export const lawyers = [
     _id: "lawyer9",
     name: "Dr. Ava Mitchell",
     image: lawyer9,
-    speciality: "Dermatologist",
+    speciality: "labor",
     degree: "MBBS",
     experience: "1 Years",
     about:
@@ -224,7 +226,7 @@ export const lawyers = [
     _id: "lawyer10",
     name: "Dr. Jeffrey King",
     image: lawyer10,
-    speciality: "Pediatricians",
+    speciality: "real_estate",
     degree: "MBBS",
     experience: "2 Years",
     about:
@@ -239,7 +241,7 @@ export const lawyers = [
     _id: "lawyer11",
     name: "Dr. Zoe Kelly",
     image: lawyer11,
-    speciality: "Neurologist",
+    speciality: "criminal",
     degree: "MBBS",
     experience: "4 Years",
     about:
@@ -254,7 +256,7 @@ export const lawyers = [
     _id: "lawyer12",
     name: "Dr. Patrick Harris",
     image: lawyer12,
-    speciality: "Neurologist",
+    speciality: "criminal",
     degree: "MBBS",
     experience: "4 Years",
     about:
@@ -269,7 +271,7 @@ export const lawyers = [
     _id: "lawyer13",
     name: "Dr. Chloe Evans",
     image: lawyer13,
-    speciality: "Gastroenterologist",
+    speciality: "commercial",
     degree: "MBBS",
     experience: "4 Years",
     about:
@@ -284,7 +286,7 @@ export const lawyers = [
     _id: "lawyer14",
     name: "Dr. Ryan Martinez",
     image: lawyer14,
-    speciality: "Gynecologist",
+    speciality: "corporate",
     degree: "MBBS",
     experience: "3 Years",
     about:
@@ -299,7 +301,7 @@ export const lawyers = [
     _id: "lawyer15",
     name: "Dr. Amelia Hill",
     image: lawyer15,
-    speciality: "Dermatologist",
+    speciality: "labor",
     degree: "MBBS",
     experience: "1 Years",
     about:
