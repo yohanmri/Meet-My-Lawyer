@@ -8,9 +8,12 @@ export const AdminContext = createContext()
 
 const AdminContextProvider = (props) => {
 
+
+
     const [aToken, setAToken] = useState(localStorage.getItem('aToken') ? localStorage.getItem('aToken') : '')
 
     const [lawyers, setLawyers] = useState([])
+    const [appointments, setAppointments] = useState([])
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
@@ -21,7 +24,7 @@ const AdminContextProvider = (props) => {
             if (data.success) {
                 setLawyers(data.lawyers)
                 console.log(data.lawyers)
-                getAllLawyers()
+                // Removed the recursive call that was causing infinite loop
             } else {
                 toast.error(data.message)
             }
@@ -30,6 +33,7 @@ const AdminContextProvider = (props) => {
             toast.error(error.message)
         }
     }
+
     const changeAvailability = async (lawyerId) => {
         console.log('🔄 changeAvailability called with lawyerId:', lawyerId);
         console.log('🔑 Using token:', aToken);
@@ -78,10 +82,46 @@ const AdminContextProvider = (props) => {
         }
     }
 
+    const getAllAppointments = async () => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/admin/appointments', { headers: { aToken } })
+
+            if (data.success) {
+                setAppointments(data.appointments)
+                console.log(data.appointments);
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(data.message)
+        }
+    }
+
+    const cancelAppointment = async (appointmentId) => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/admin/cancel-appointment', { appointmentId }, { headers: { aToken } })
+            if (data.success) {
+                toast.success(data.message)
+                getAllAppointments()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(data.message)
+
+        }
+    }
+
+
     const value = {
         aToken, setAToken,
         backendUrl, lawyers,
         getAllLawyers, changeAvailability,
+        appointments, setAppointments,
+        getAllAppointments,
+        cancelAppointment
     }
 
 
@@ -91,5 +131,7 @@ const AdminContextProvider = (props) => {
         </AdminContext.Provider>
     )
 }
+
+
 
 export default AdminContextProvider
