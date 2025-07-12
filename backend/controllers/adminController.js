@@ -4,6 +4,7 @@ import { v2 as cloudinary } from "cloudinary";
 import lawyerModel from "../models/lawyerModel.js";
 
 import jwt from "jsonwebtoken";
+import appointmentModel from "../models/appointmentModel.js";
 
 // API for adding lawyer
 const addLawyer = async (req, res) => {
@@ -166,4 +167,54 @@ const allLawyers = async (req, res) => {
   }
 };
 
-export { addLawyer, loginAdmin, allLawyers };
+// API to get all appointments list
+
+const appointmentsAdmin = async (req, res) => {
+  try {
+
+    const appointments = await appointmentModel.find({})
+    res.json({ success: true, appointments })
+
+  } catch (error) {
+    console.log("Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+//API for appointment cancellation
+
+
+const appointmentCancel = async (req, res) => {
+  try {
+
+    const { appointmentId } = req.body
+
+    const appointmentData = await appointmentModel.findById(appointmentId)
+
+
+    await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
+
+    //Releasing Lawyers slot
+
+    const { lawyerId, slotDate, slotTime } = appointmentData
+
+    const lawyerData = await lawyerModel.findById(lawyerId)
+
+    let slots_booked = lawyerData.slots_booked
+
+    slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
+
+    await lawyerModel.findByIdAndUpdate(lawyerId, { slots_booked })
+
+    res.json({ success: true, message: 'Appointment Cancelled' })
+
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+export { addLawyer, loginAdmin, allLawyers, appointmentsAdmin, appointmentCancel };
