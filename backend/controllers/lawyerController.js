@@ -1,6 +1,7 @@
 import lawyerModel from "../models/lawyerModel.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import appointmentModel from "../models/appointmentModel.js";
 
 const changeAvailability = async (req, res) => {
   try {
@@ -57,4 +58,19 @@ const loginLawyer = async (req, res) => {
   }
 }
 
-export { changeAvailability, lawyerList, loginLawyer };
+//API to get lawyer appointments for lawyer panel
+
+const appointmentsLawyer = async (req, res) => {
+  try {
+    const { lawyerId } = req.body
+    const appointments = await appointmentModel.find({ lawyerId })
+
+    res.json({ success: true, appointments })
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+// API to mark
+
+export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer };
