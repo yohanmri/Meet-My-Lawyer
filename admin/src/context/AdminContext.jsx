@@ -11,7 +11,6 @@ const AdminContextProvider = (props) => {
 
 
     const [aToken, setAToken] = useState(localStorage.getItem('aToken') ? localStorage.getItem('aToken') : '')
-
     const [lawyers, setLawyers] = useState([])
     const [appointments, setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
