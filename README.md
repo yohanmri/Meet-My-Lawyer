@@ -19,3 +19,17 @@ Toast Notification
 
 //Crop part
 npm install react-easy-crop
+
+//Paymentmethod
+Razorpay
+used the UOM mail for the Razorpay
+
+-----KeyID
+rzp_test_0zFzma6SFRznF3
+
+----KeySecret
+0ycrDj3c60CPlvq87ePMkfvU
+
+--Dummy CardNumber for Razorpay
+https://razorpay.com/docs/payments/payments/test-card-details/
+
