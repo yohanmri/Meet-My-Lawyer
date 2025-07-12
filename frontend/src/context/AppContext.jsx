@@ -45,7 +45,7 @@ const AppContextProvider = (props) => {
     }
 
     const value = {
-        lawyers,
+        lawyers, getLawyersData,
         currencySymbol,
         token, setToken,
         backendUrl,
