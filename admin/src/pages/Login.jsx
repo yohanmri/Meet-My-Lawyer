@@ -3,6 +3,7 @@ import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { LawyerContext } from '../context/LawyerContext'
 
 const Login = () => {
 
@@ -11,6 +12,7 @@ const Login = () => {
     const [password, setPassword] = useState('')
 
     const { setAToken, backendUrl } = useContext(AdminContext)
+    const { setDToken } = useContext(LawyerContext)
 
 
 
@@ -29,6 +31,14 @@ const Login = () => {
             }
             else {
 
+                const { data } = await axios.post(backendUrl + '/api/lawyer/login', { email, password })
+                if (data.success) {
+                    localStorage.setItem('dToken', data.token)
+                    setDToken(data.token)
+                    console.log(data.token);
+                } else {
+                    toast.error(data.message)
+                }
             }
 
         } catch (error) {
