@@ -5,6 +5,7 @@ import lawyerModel from "../models/lawyerModel.js";
 
 import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
+import userModel from "../models/userModel.js";
 
 // API for adding lawyer
 const addLawyer = async (req, res) => {
@@ -216,5 +217,29 @@ const appointmentCancel = async (req, res) => {
   }
 }
 
+// API to get dashboard data for admin panel
 
-export { addLawyer, loginAdmin, allLawyers, appointmentsAdmin, appointmentCancel };
+const adminDashboard = async (req, res) => {
+  try {
+
+    const lawyers = await lawyerModel.find({}) //can access all the lawyers here
+    const users = await userModel.find({}) //can access all the users
+    const appointments = await appointmentModel.find({}) //can access all appointments
+
+    const dashData = {
+      lawyers: lawyers.length,
+      appointments: appointments.length,
+      clients: users.length,
+      latestAppointments: appointments.reverse().slice(0, 5)
+    }
+
+    res.json({ success: true, dashData })
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+export { addLawyer, loginAdmin, allLawyers, appointmentsAdmin, appointmentCancel, adminDashboard };
