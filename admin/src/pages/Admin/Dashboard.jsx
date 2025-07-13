@@ -42,7 +42,6 @@ const Dashboard = () => {
                         <p className='text-gray-400'>Clients</p>
                     </div>
                 </div>
-
             </div>
 
             <div className='bg-white'>
