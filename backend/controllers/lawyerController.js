@@ -165,4 +165,50 @@ const lawyerDashboard = async (req, res) => {
   }
 }
 
-export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer, appointmentCancel, appointmentComplete, lawyerDashboard };
+// API to get lawyer profile for lawyer panel
+
+const lawyerProfile = async (req, res) => {
+  try {
+
+    const { lawyerId } = req.body
+    const profileData = await lawyerModel.findById(lawyerId).select('-password')
+
+    res.json({ success: true, profileData })
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+// API to update lawyer profile data from lawyer panel
+
+const updateLawyerProfile = async (req, res) => {
+
+  try {
+
+    const { lawyerId, fees, address, available } = req.body
+
+    await lawyerModel.findByIdAndUpdate(lawyerId, { fees, address, available })
+
+    res.json({ success: true, message: ' Profile Updated' })
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+export {
+  changeAvailability,
+  lawyerList,
+  loginLawyer,
+  appointmentsLawyer,
+  appointmentCancel,
+  appointmentComplete,
+  lawyerDashboard,
+  lawyerProfile,
+  updateLawyerProfile,
+};

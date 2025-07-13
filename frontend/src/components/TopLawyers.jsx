@@ -27,7 +27,7 @@ const TopLawyers = () => {
 
               {/* Availability Badge - Top Left */}
               <div className="absolute top-[-2px] left-[-2px] flex items-center gap-1 bg-gray-700 bg-opacity-80 px-1 py-1 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className={`w-2 h-2 ${item.available ? ' bg-green-500 ' : 'bg-red-500'} rounded-full`}></div>
                 {/* <span className="text-green-500 text-xs">Available</span>*/}
               </div>
             </div>

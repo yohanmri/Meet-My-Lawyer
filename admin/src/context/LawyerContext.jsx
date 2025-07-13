@@ -16,6 +16,8 @@ const LawyerContextProvider = (props) => {
 
     const [dashData, setDashData] = useState(false)
 
+    const [profileData, setProfileData] = useState(false)
+
     const getAppointments = async () => {
         try {
             const { data } = await axios.get(backendUrl + '/api/lawyer/appointments', { headers: { dToken } })
@@ -89,6 +91,23 @@ const LawyerContextProvider = (props) => {
         }
     }
 
+    const getProfileData = async () => {
+        try {
+
+            const { data } = await axios.get(backendUrl + '/api/lawyer/profile', { headers: { dToken } })
+
+            if (data.success) {
+                setProfileData(data.profileData)
+                console.log(data.profileData);
+            }
+
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message)
+
+        }
+    }
+
     const value = {
         dToken, setDToken,
         backendUrl,
@@ -96,6 +115,8 @@ const LawyerContextProvider = (props) => {
         getAppointments,
         completeAppointment, cancelAppointment,
         dashData, setDashData, getDashData,
+        profileData, setProfileData,
+        getProfileData,
     }
     return (
         <LawyerContext.Provider value={value}>

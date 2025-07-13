@@ -698,6 +698,8 @@ const Lawyers = () => {
                   Available Lawyers  {selectedDistrict && <span className='text-white font-medium'> - in {selectedDistrict}</span>}
 
                 </h2>
+
+
                 <div className='bg-gradient-to-br from-gray-900 to-gray-800 text-white px-3 py-1 rounded-full text-sm font-semibold'>
                   {filterLawyer.length} Found
                 </div>
@@ -727,8 +729,8 @@ const Lawyers = () => {
                           />
                         </div>
                         {/* Availability Badge */}
-                        <div className="absolute top-0 right-0 flex items-center gap-1 bg-green-500 px-1 py-1 rounded-full shadow-lg">
-                          <div className="w-1 h-1 bg-green-300 rounded-full animate-pulse"></div>
+                        <div className={`absolute top-0 right-0 flex items-center gap-1 ${item.available ? ' bg-green-500 ' : 'bg-red-500'} px-1 py-1 rounded-full shadow-lg`}>
+                          <div className={`w-1 h-1 ${item.available ? ' bg-green-300 ' : 'bg-red-200'} rounded-full animate-pulse`}></div>
                           {/* <span className="text-xs text-white font-semibold">Online</span>*/}
                         </div>
                       </div>

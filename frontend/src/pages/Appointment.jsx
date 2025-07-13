@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
-import { assets } from '../assets/assets'
 import RelatedLawyers from '../components/RelatedLawyers'
 import { toast } from 'react-toastify'
 import axios from 'axios'
@@ -20,6 +19,12 @@ const Appointment = () => {
 
   const getAvailableSlots = async () => {
     setLawyerSlots([])
+
+    // Add null check here
+    if (!lawyerInfo || !lawyerInfo.slots_booked) {
+      return
+    }
+
     let today = new Date()
 
     for (let i = 0; i < 7; i++) {
@@ -272,12 +277,14 @@ const Appointment = () => {
                   alt={`${lawyerInfo.name}`}
                 />
 
-                <div className="absolute top-4 right-4 bg-green-500 px-3 py-1 rounded-full text-sm font-medium text-white shadow-lg">
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-medium text-white shadow-lg ${lawyerInfo.available ? 'bg-green-500' : 'bg-red-500'}`}>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
-                    Available Now
+                    {lawyerInfo.available ? 'Available Now' : 'Not Available'}
                   </div>
                 </div>
+
+
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                   <h3 className="text-white text-lg font-bold">{lawyerInfo.name}</h3>
                   <p className="text-gray-200 text-sm">{lawyerInfo.speciality} Specialist</p>
@@ -293,10 +300,7 @@ const Appointment = () => {
                   <span className='text-gray-700'>Experience</span>
                   <span className='font-semibold text-gray-900'>{lawyerInfo.experience} Years</span>
                 </div>
-                <div className='flex items-center justify-between text-sm'>
-                  <span className='text-gray-700'>Rating</span>
-                  <span className='font-semibold text-gray-900'>⭐ 4.9/5</span>
-                </div>
+
                 <div className='flex items-center justify-between text-sm'>
                   <span className='text-gray-700'>Location</span>
                   <span className='font-semibold text-gray-900'>{lawyerInfo.district}</span>
