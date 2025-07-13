@@ -125,4 +125,44 @@ const appointmentCancel = async (req, res) => {
   }
 }
 
-export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer, appointmentCancel, appointmentComplete };
+//API to get dashboard data for lawyerpanel
+
+const lawyerDashboard = async (req, res) => {
+  try {
+
+    const { lawyerId } = req.body
+
+    const appointments = await appointmentModel.find({ lawyerId })
+
+    let earnings = 0
+
+    appointments.map((item) => {
+      if (item.isCompleted || item.payment) {
+        earnings += item.amount
+      }
+    })
+
+    let clients = []
+
+    appointments.map((item) => {
+      if (!clients.includes(item.userId)) {
+        clients.push(item.userId)
+      }
+    })
+
+    const dashData = {
+      earnings,
+      appointments: appointments.length,
+      clients: clients.length,
+      latestAppointments: appointments.reverse().slice(0, 5)
+    }
+
+    res.json({ success: true, dashData })
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer, appointmentCancel, appointmentComplete, lawyerDashboard };
