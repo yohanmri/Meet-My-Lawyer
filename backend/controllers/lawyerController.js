@@ -71,6 +71,58 @@ const appointmentsLawyer = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 }
-// API to mark
+// API to mark appointment completed for lawyer panal
+const appointmentComplete = async (req, res) => {
+  try {
 
-export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer };
+    const { lawyerId, appointmentId } = req.body
+
+    const appointmentData = await appointmentModel.findById(appointmentId)
+
+
+    //With whom the appointment is booked? same lawyer has logged in?
+    if (appointmentData && appointmentData.lawyerId == lawyerId) {
+
+      await appointmentModel.findByIdAndUpdate(appointmentId, { isCompleted: true })
+      return res.json({ success: true, message: 'Appointment Completed' })
+
+    } else {
+      return res.json({ success: false, message: 'Mark Failed' })
+
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+
+
+// API to mark appointment cancel for lawyer panal
+const appointmentCancel = async (req, res) => {
+  try {
+
+    const { lawyerId, appointmentId } = req.body
+
+    const appointmentData = await appointmentModel.findById(appointmentId)
+
+
+    //With whom the appointment is booked? same lawyer has logged in?
+    if (appointmentData && appointmentData.lawyerId == lawyerId) {
+
+      await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
+      return res.json({ success: true, message: 'Appointment Cancelled' })
+
+    } else {
+      return res.json({ success: false, message: 'Cancellation Failed' })
+
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+export { changeAvailability, lawyerList, loginLawyer, appointmentsLawyer, appointmentCancel, appointmentComplete };
