@@ -32,9 +32,17 @@ const Header = () => {
                         <img className='w-28' src={assets.group_profiles} alt="" />
                         <p>Simply browse through out extensive list of trusted lawyers, <br className='hidden sm:block' />shedule your appointment hassle-free</p>
                     </div>
-                    <a href="#speciality" className='inline-flex items-center justify-center gap-2 bg-white px-8 py-3 rounded-full text-gray-600 text-sm hover:scale-105 transition-all duration-300 mt-4 w-48'>
+                    {/* <a href="#speciality" className='inline-flex items-center justify-center gap-2 bg-white px-8 py-3 rounded-full text-gray-600 text-sm hover:scale-105 transition-all duration-300 mt-4 w-48'>
                         BOOK NOW<img className='w-3' src={assets.arrow_icon} alt="" />
+                    </a> */}
+                    <a href="http://localhost:5174/login"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className='inline-flex items-center justify-center gap-2 bg-white px-8 py-3 rounded-full text-gray-600 text-sm hover:scale-105 transition-all duration-300 mt-4 w-48'>
+                        Lawyer Login<img className='w-3' src={assets.arrow_icon} alt="" />
                     </a>
+
+
                 </div>
             </div>
 
