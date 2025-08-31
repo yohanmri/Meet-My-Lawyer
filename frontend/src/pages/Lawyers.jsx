@@ -543,29 +543,25 @@ const Lawyers = () => {
   return (
     <div className='min-h-screen bg-[#D8D8E3]'>
       <div className='max-w-7xl mx-auto'>
-        <div className='text-left text-2xl pt-0 text-gray-500 mb-[5px]'>
+        <div className='text-left text-2xl text-gray-500 mb-[5px] pt-5 pb-5'>
           <p>Explore <span className='text-gray-700 font-medium'>Lawyers</span></p>
         </div>
-        {/* Modern White Filter Bar */}
-        <div className='bg-white shadow-md p-4 mb-4 border border-gray-200 rounded-lg'>
-          <div className='flex flex-wrap gap-4 items-end'>
+        <div className="border border-gray-200 rounded-2xl px-4 py-2 mb-6 shadow-sm">
+          <div className="flex flex-wrap gap-4 items-end">
             {/* Specialty Filter */}
-            <div className='flex-1 min-w-[200px]'>
-              <label className='block text-xs font-medium text-gray-600 mb-1'>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
                 Legal Specialty
               </label>
               <select
                 value={speciality || ''}
                 onChange={(e) => e.target.value ? navigate(`/lawyers/${e.target.value}`) : navigate('/lawyers')}
-                className='w-full px-3 py-2 bg-white text-gray-900 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 appearance-none cursor-pointer'
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: 'right 12px center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '16px'
-                }}
+                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none "
+                style={{ backgroundColor: '#D8D8E3' }}
+
               >
-                <option value=''>All Specialties</option>
+                <option
+                  value="">All Specialties</option>
                 {specialties.map((spec) => (
                   <option key={spec} value={spec}>{spec}</option>
                 ))}
@@ -573,45 +569,37 @@ const Lawyers = () => {
             </div>
 
             {/* District Filter */}
-            <div className='flex-1 min-w-[200px]'>
-              <label className='block text-xs font-medium text-gray-600 mb-1'>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
                 District
               </label>
               <select
                 value={selectedDistrict}
                 onChange={(e) => handleDistrictChange(e.target.value)}
-                className='w-full px-3 py-2 bg-white text-gray-900 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 appearance-none cursor-pointer'
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: 'right 12px center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '16px'
-                }}
+                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
+                style={{ backgroundColor: '#D8D8E3' }}
+
               >
-                <option value=''>All Districts</option>
+                <option value="">All Districts</option>
                 {districts.map((district) => (
                   <option key={district} value={district}>{district}</option>
                 ))}
               </select>
             </div>
 
-            {/* Consultation Method Filter */}
-            <div className='flex-1 min-w-[200px]'>
-              <label className='block text-xs font-medium text-gray-600 mb-1'>
+            {/* Consultation Type Filter */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
                 Consultation Type
               </label>
               <select
                 value={selectedConsultationMethod}
                 onChange={(e) => setSelectedConsultationMethod(e.target.value)}
-                className='w-full px-3 py-2 bg-white text-gray-900 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 appearance-none cursor-pointer'
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: 'right 12px center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '16px'
-                }}
+                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
+                style={{ backgroundColor: '#D8D8E3' }}
+
               >
-                <option value=''>All Methods</option>
+                <option value="">All Methods</option>
                 {consultationMethods.map((method) => (
                   <option key={method} value={method}>{method}</option>
                 ))}
@@ -619,22 +607,18 @@ const Lawyers = () => {
             </div>
 
             {/* Experience Filter */}
-            <div className='flex-1 min-w-[200px]'>
-              <label className='block text-xs font-medium text-gray-600 mb-1'>
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
                 Experience Level
               </label>
               <select
                 value={selectedExperience}
                 onChange={(e) => setSelectedExperience(e.target.value)}
-                className='w-full px-3 py-2 bg-white text-gray-900 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-all duration-200 appearance-none cursor-pointer'
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                  backgroundPosition: 'right 12px center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '16px'
-                }}
+                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
+                style={{ backgroundColor: '#D8D8E3' }}
+
               >
-                <option value=''>All Experience</option>
+                <option value="">All Experience</option>
                 {experienceRanges.map((range) => (
                   <option key={range} value={range}>{range}</option>
                 ))}
@@ -642,19 +626,18 @@ const Lawyers = () => {
             </div>
 
             {/* Clear Filters Button */}
-            <div className='flex items-end'>
+            <div className="flex items-end">
               <button
                 onClick={clearFilters}
-                className='px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 text-sm font-medium rounded-md transition-all duration-200 border border-gray-300 hover:border-gray-400'
+                className="px-4 py-1 text-sm text-[#6A0610] border border-[#6A0610] rounded-full hover:bg-[#6A0610] hover:text-white transition-all"
                 title="Clear all filters"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                Clear
               </button>
             </div>
           </div>
         </div>
+
 
         {/* Main Content Area */}
         <div className='flex flex-col lg:flex-row gap-1'>

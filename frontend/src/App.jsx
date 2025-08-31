@@ -10,6 +10,7 @@ import MyAppointments from './pages/MyAppointments'
 import Appointment from './pages/Appointment'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import RegisterLawyer from './pages/RegisterLawyer'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
@@ -25,6 +26,7 @@ const App = () => {
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/my-profile' element={<MyProfile />} />
+        <Route path='/register-lawyer' element={<RegisterLawyer />} />
         <Route path='/my-appointments' element={<MyAppointments />} />
         <Route path='/appointment/:lawyerId' element={<Appointment />} />
       </Routes>

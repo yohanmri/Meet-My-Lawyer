@@ -3,7 +3,7 @@ import { assets } from '../assets/assets'
 
 const Header = () => {
     return (
-        <div className='flex flex-col md:flex-row flex-wrap rounded-lg px-6 md:px-10 lg:px-20 relative overflow-hidden'
+        <div className='flex flex-col md:flex-row flex-wrap rounded-lg px-6 md:px-10 lg:px-20 relative overflow-hidden mt-10 mb-5'
             style={{ background: 'linear-gradient(to right,black, #6A0610, #D00C1F, black)' }}
 
         >

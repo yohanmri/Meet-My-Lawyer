@@ -11,6 +11,7 @@ const Appointment = () => {
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
   const navigate = useNavigate()
+  const [consultationType, setConsultationType] = useState('online');
 
   const [lawyerInfo, setLawyerInfo] = useState(null)
   const [lawyerSlots, setLawyerSlots] = useState([])
@@ -88,7 +89,7 @@ const Appointment = () => {
 
       const slotDate = day + "_" + month + "_" + year
 
-      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { lawyerId, slotDate, slotTime }, { headers: { token } })
+      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { lawyerId, slotDate, slotTime, consultationType }, { headers: { token } })
       if (data.success) {
         toast.success(data.message)
         getLawyersData()
@@ -129,12 +130,11 @@ const Appointment = () => {
       <div className='max-w-6xl mx-auto px-4'>
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
           {/* Left Column - Lawyer Info & Booking */}
           <div className='lg:col-span-2 space-y-4'>
 
             {/* Booking Slots Card - Compact */}
-            <div className='bg-[#D8D8E3] rounded-lg border border-white border-opacity-50 overflow-hidden h-full flex flex-col' style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
+            <div className='bg-[#D8D8E3] rounded-lg border border-white border-opacity-50 overflow-hidden flex flex-col h-full min-h-[600px]' style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06)' }}>
               <div className='bg-black text-white p-4'>
                 <h2 className='text-lg font-bold flex items-center gap-2'>
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -193,11 +193,73 @@ const Appointment = () => {
                   </div>
                 </div>
 
+                {/* Consultation Type Selection - FIXED */}
+                <div className='mb-4'>
+                  <h3 className='text-base font-semibold text-gray-900 mb-3'>Consultation Type</h3>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                    {/* Online Option */}
+                    <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${consultationType === 'online'
+                      ? 'bg-blue-50 border-blue-300 shadow-md'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                      } ${lawyerInfo.method === 'onsite' ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}>
+                      <input
+                        type="radio"
+                        name="consultationType"
+                        value="online"
+                        checked={consultationType === 'online'}
+                        onChange={(e) => setConsultationType(e.target.value)}
+                        disabled={lawyerInfo.method === 'onsite'}
+                        className='w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2'
+                      />
+                      <div className='flex items-center gap-2 flex-1'>
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v8a1 1 0 01-1 1h-4.586l-2.707 2.707a1 1 0 01-1.414 0L4.586 13H4a1 1 0 01-1-1V4z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className='text-sm font-medium text-gray-900'>Online</p>
+                          <p className='text-xs text-gray-500'>
+                            {lawyerInfo.method === 'onsite' ? 'Not Available' : 'Video/Audio Call'}
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Onsite Option */}
+                    <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${consultationType === 'onsite'
+                      ? 'bg-green-50 border-green-300 shadow-md'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                      } ${lawyerInfo.method === 'online' ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}>
+                      <input
+                        type="radio"
+                        name="consultationType"
+                        value="onsite"
+                        checked={consultationType === 'onsite'}
+                        onChange={(e) => setConsultationType(e.target.value)}
+                        disabled={lawyerInfo.method === 'online'}
+                        className='w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500 focus:ring-2'
+                      />
+                      <div className='flex items-center gap-2 flex-1'>
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className='text-sm font-medium text-gray-900'>Onsite</p>
+                          <p className='text-xs text-gray-500'>
+                            {lawyerInfo.method === 'online' ? 'Not Available' : 'In-person Meeting'}
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Appointment Summary - Compact */}
-                {slotTime && (
+                {slotTime && consultationType && (
                   <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4'>
                     <h4 className='text-base font-semibold text-gray-900 mb-2'>Appointment Summary</h4>
-                    <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
                       <div className='flex items-center gap-2'>
                         <div className='w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center'>
                           <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -239,6 +301,24 @@ const Appointment = () => {
                           <p className='text-purple-600 font-semibold text-sm'>{currencySymbol}{lawyerInfo.fees}</p>
                         </div>
                       </div>
+
+                      <div className='flex items-center gap-2'>
+                        <div className='w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center'>
+                          {consultationType === 'online' ? (
+                            <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v8a1 1 0 01-1 1h-4.586l-2.707 2.707a1 1 0 01-1.414 0L4.586 13H4a1 1 0 01-1-1V4z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <div>
+                          <p className='text-xs font-medium text-gray-900'>Type</p>
+                          <p className='text-orange-600 font-semibold text-sm capitalize'>{consultationType}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -246,13 +326,13 @@ const Appointment = () => {
                 {/* Book Button - Compact */}
                 <button
                   onClick={bookAppointment}
-                  className={`w-full py-3 rounded-lg text-white font-semibold text-base transition-all duration-200 ${slotTime
+                  className={`w-full py-3 rounded-lg text-white font-semibold text-base transition-all duration-200 ${slotTime && consultationType
                     ? 'bg-gradient-to-r from-[#6A0610] to-[#D00C1F] hover:from-[#7A0611] hover:to-[#E00C1F] shadow-lg hover:shadow-xl'
                     : 'bg-gray-400 cursor-not-allowed'
                     }`}
-                  disabled={!slotTime}
+                  disabled={!slotTime || !consultationType}
                 >
-                  {slotTime ? (
+                  {slotTime && consultationType ? (
                     <span className='flex items-center justify-center gap-2'>
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -260,7 +340,7 @@ const Appointment = () => {
                       Confirm Appointment
                     </span>
                   ) : (
-                    'Select Date & Time to Continue'
+                    !slotTime ? 'Select Date & Time to Continue' : 'Select Consultation Type to Continue'
                   )}
                 </button>
               </div>
@@ -284,7 +364,6 @@ const Appointment = () => {
                   </div>
                 </div>
 
-
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                   <h3 className="text-white text-lg font-bold">{lawyerInfo.name}</h3>
                   <p className="text-gray-200 text-sm">{lawyerInfo.speciality} Specialist</p>
@@ -307,7 +386,7 @@ const Appointment = () => {
                 </div>
                 <div className='flex items-center justify-between text-sm'>
                   <span className='text-gray-700'>Method</span>
-                  <span className='font-semibold text-gray-900'>{lawyerInfo.consultationMethod}</span>
+                  <span className='font-semibold text-gray-900'>{lawyerInfo.method}</span>
                 </div>
                 <div className='flex items-center justify-between text-sm'>
                   <span className='text-gray-700'>Consultation fee</span>

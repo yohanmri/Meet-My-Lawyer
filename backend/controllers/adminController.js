@@ -6,6 +6,8 @@ import lawyerModel from "../models/lawyerModel.js";
 import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModel.js";
+import applicationModel from "../models/applicationModel.js";
+
 
 // API for adding lawyer
 const addLawyer = async (req, res) => {
@@ -119,8 +121,8 @@ const addLawyer = async (req, res) => {
       court2,
       date: Date.now(),
       slots_booked: slots_booked || {},
-      method, // Add this
-      online_link, // Add this
+      method, // online or onsite
+      online_link, // link to join
     };
 
     const newLawyer = new lawyerModel(lawyerData);
@@ -241,5 +243,16 @@ const adminDashboard = async (req, res) => {
   }
 }
 
+//API to get al the applications from the lawyers
+const getApplications = async (req, res) => {
+  try {
+    const applications = await applicationModel.find().sort({ application_date: -1 }); // latest first
+    res.json({ success: true, applications });
+  } catch (error) {
+    console.error("Error fetching applications:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-export { addLawyer, loginAdmin, allLawyers, appointmentsAdmin, appointmentCancel, adminDashboard };
+
+export { addLawyer, loginAdmin, allLawyers, appointmentsAdmin, appointmentCancel, adminDashboard, getApplications };
