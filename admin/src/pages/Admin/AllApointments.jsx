@@ -1,24 +1,74 @@
-import React from 'react'
-import { useContext } from 'react'
-import { AdminContext } from '../../context/AdminContext'
-import { useEffect } from 'react'
-import { AppContext } from '../../context/AppContext'
-import { assets } from '../../assets/assets'
+import React, { useContext, useEffect, useState } from 'react';
+import { AdminContext } from '../../context/AdminContext';
+import { AppContext } from '../../context/AppContext';
+import { MdCancel, MdCheckCircle } from 'react-icons/md';
 
 const AllApointments = () => {
+  const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext);
+  const { calculateAge, slotDateFormat, currency } = useContext(AppContext);
 
-  const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext)
-  const { calculateAge, slotDateFormat, currency } = useContext(AppContext)
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     if (aToken) {
-      getAllAppointments()
+      getAllAppointments();
     }
-  }, [aToken])
+  }, [aToken]);
+
+  const filteredAppointments = appointments.filter(item => {
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'completed' && item.isCompleted) ||
+      (filterStatus === 'cancelled' && item.cancelled) ||
+      (filterStatus === 'upcoming' && !item.cancelled && !item.isCompleted);
+
+    const matchesSearch = item.userData.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const appointmentDate = new Date(item.slotDate);
+    const isAfterStart = startDate ? appointmentDate >= new Date(startDate) : true;
+    const isBeforeEnd = endDate ? appointmentDate <= new Date(endDate) : true;
+
+    return matchesStatus && matchesSearch && isAfterStart && isBeforeEnd;
+  });
 
   return (
     <div className='w-full max-w-6xl m-5'>
       <p className='mb-3 text-lg font-medium'>All Appointments</p>
+
+      {/* Filters */}
+      <div className='flex flex-wrap justify-between items-center gap-4 mb-4'>
+        <div className='flex gap-2'>
+          <button onClick={() => setFilterStatus('all')} className={`px-4 py-1 rounded-full border ${filterStatus === 'all' ? 'bg-[#6A0610] text-white' : 'text-gray-700'}`}>All</button>
+          <button onClick={() => setFilterStatus('completed')} className={`px-4 py-1 rounded-full border ${filterStatus === 'completed' ? 'bg-green-500 text-white' : 'text-gray-700'}`}>Completed</button>
+          <button onClick={() => setFilterStatus('cancelled')} className={`px-4 py-1 rounded-full border ${filterStatus === 'cancelled' ? 'bg-red-500 text-white' : 'text-gray-700'}`}>Cancelled</button>
+          <button onClick={() => setFilterStatus('upcoming')} className={`px-4 py-1 rounded-full border ${filterStatus === 'upcoming' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}>Upcoming</button>
+        </div>
+
+        <div className='flex gap-2 items-center'>
+          <input
+            type='text'
+            placeholder='Search by client name'
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className='px-3 py-1 border rounded-md text-sm text-gray-700'
+          />
+          <input
+            type='date'
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className='px-3 py-1 border rounded-md text-sm text-gray-700 bg-white shadow-sm'
+          />
+          <input
+            type='date'
+            value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            className='px-3 py-1 border rounded-md text-sm text-gray-700 bg-white shadow-sm'
+          />
+        </div>
+      </div>
 
       <div className='bg-white border rounded text-sm max-h-[80vh] min-h-[60vh] overflow-y-scroll'>
         <div className='hidden sm:grid grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] grid-flow-col py-3 px-6 border-b'>
@@ -31,31 +81,44 @@ const AllApointments = () => {
           <p>Actions</p>
         </div>
 
-        {appointments.map((item, index) => (
-          <div className='flex flex-wrap justify-between max-sm:gap-2 sm:grid sm:grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] items-center text-gray-500 py-3 px-6 border-b hover:bh-gray-50' key={index}>
+        {filteredAppointments.map((item, index) => (
+          <div
+            className='flex flex-wrap justify-between max-sm:gap-2 sm:grid sm:grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50'
+            key={index}
+          >
             <p className='max-sm:hidden'>{index + 1}</p>
             <div className='flex items-center gap-2'>
-              <img className='w-8 rounded-full object-cover' src={item.userData.image} alt="" /><p>{item.userData.name}</p>
+              <img className='w-8 h-8 rounded-full object-cover' src={item.userData.image} alt='' />
+              <p>{item.userData.name}</p>
             </div>
             <p className='max-sm:hidden'>{calculateAge(item.userData.dob)}</p>
             <p>{slotDateFormat(item.slotDate)}, {item.slotTime}</p>
             <div className='flex items-center gap-2'>
-              <img className='w-8 h-8 rounded-full object-cover' src={item.lawyerData.image} alt="" /><p>{item.lawyerData.name}</p>
+              <img className='w-8 h-8 rounded-full object-cover' src={item.lawyerData.image} alt='' />
+              <p>{item.lawyerData.name}</p>
             </div>
             <p>{currency}{item.amount}</p>
-            {item.cancelled
-              ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
-              : item.isCompleted
-                ? <p className='text-green-500 text-xs font-medium'>Completed</p>
-                : <img
-                  onClick={() => cancelAppointment(item._id)}
-                  className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
-            }
+            {item.cancelled ? (
+              <p className='text-red-400 text-xs font-medium flex items-center gap-1'>
+                <MdCancel size={16} /> Cancelled
+              </p>
+            ) : item.isCompleted ? (
+              <p className='text-green-500 text-xs font-medium flex items-center gap-1'>
+                <MdCheckCircle size={16} /> Completed
+              </p>
+            ) : (
+              <MdCancel
+                onClick={() => cancelAppointment(item._id)}
+                className='text-red-500 cursor-pointer'
+                size={24}
+              />
+            )}
           </div>
+
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AllApointments
+export default AllApointments;

@@ -3,6 +3,8 @@ import { AppContext } from "../context/AppContext"
 import axios from "axios"
 import { toast } from "react-toastify"
 import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom';
+
 
 const MyAppointments = () => {
 
@@ -144,7 +146,14 @@ const MyAppointments = () => {
                   className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'
                 >Appointment cancelled</button>}
 
-              {item.isCompleted && <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>Completed</button>}
+              {item.isCompleted && (
+                <a href={item.lawyerData.online_link} target="_blank" rel="noopener noreferrer">
+                  <button className="sm:min-w-48 py-2 border border-green-500 rounded text-green-500">
+                    Completed
+                  </button>
+                </a>
+              )}
+
             </div>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import appointment_img from "./appointment_img.png";
+import appointment1_img from "./appointment1_img.png";
 import header_img from "./header_img.png";
 import header_img2 from "./header_img2.png";
 import group_profiles from "./group_profiles.png";
@@ -26,6 +27,7 @@ import real_estate from "./real_estate.png";
 
 export const assets = {
   appointment_img,
+  appointment1_img,
   header_img,
   header_img2,
   group_profiles,

@@ -71,6 +71,7 @@ const appointmentsLawyer = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 }
+
 // API to mark appointment completed for lawyer panal
 const appointmentComplete = async (req, res) => {
   try {
@@ -88,7 +89,6 @@ const appointmentComplete = async (req, res) => {
 
     } else {
       return res.json({ success: false, message: 'Mark Failed' })
-
     }
 
   } catch (error) {

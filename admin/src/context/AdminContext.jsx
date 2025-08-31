@@ -8,15 +8,14 @@ export const AdminContext = createContext()
 
 const AdminContextProvider = (props) => {
 
-
-
     const [aToken, setAToken] = useState(localStorage.getItem('aToken') ? localStorage.getItem('aToken') : '')
     const [lawyers, setLawyers] = useState([])
+    const [reqRegister, setReqRegister] = useState([])
     const [appointments, setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
+    const [applications, setApplications] = useState([])
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL
-
 
     const getAllLawyers = async () => {
         try {
@@ -31,6 +30,22 @@ const AdminContextProvider = (props) => {
 
         } catch (error) {
             toast.error(error.message)
+        }
+    }
+
+    const getAllRegisterRequests = async () => {
+        try {
+            const { data } = await axios.post(backendUrl + '/api/admin/request-to-register', {})
+            if (data.success) {
+                setReqRegister(data.reqRegister)
+                console.log(data.reqRegister)
+
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            toast.error(data.message)
         }
     }
 
@@ -98,6 +113,24 @@ const AdminContextProvider = (props) => {
         }
     }
 
+    // FIND this function and REPLACE it:
+    const getAllApplications = async () => {
+        try {
+            // FIX: Remove the empty {} parameter
+            const { data } = await axios.get(backendUrl + '/api/application/get-applications', { headers: { aToken } });
+
+            if (data.success) {
+                setApplications(data.applications);
+                console.log(data.applications);
+            } else {
+                toast.error(data.message || "Failed to fetch applications");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Server error");
+            console.error("Fetch error:", error);
+        }
+    };
+
     const cancelAppointment = async (appointmentId) => {
         try {
             const { data } = await axios.post(backendUrl + '/api/admin/cancel-appointment', { appointmentId }, { headers: { aToken } })
@@ -129,7 +162,6 @@ const AdminContextProvider = (props) => {
         }
     }
 
-
     const value = {
         aToken, setAToken,
         backendUrl, lawyers,
@@ -137,9 +169,11 @@ const AdminContextProvider = (props) => {
         appointments, setAppointments,
         getAllAppointments,
         cancelAppointment,
-        dashData, getDashData
+        dashData, getDashData,
+        getAllRegisterRequests,
+        getAllApplications,
+        applications, setApplications  // ← FIXED: Added these missing context values
     }
-
 
     return (
         <AdminContext.Provider value={value}>
@@ -147,7 +181,5 @@ const AdminContextProvider = (props) => {
         </AdminContext.Provider>
     )
 }
-
-
 
 export default AdminContextProvider

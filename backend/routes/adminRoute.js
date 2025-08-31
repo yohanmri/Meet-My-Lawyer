@@ -6,6 +6,7 @@ import {
   appointmentCancel,
   appointmentsAdmin,
   loginAdmin,
+  
 } from "../controllers/adminController.js";
 import upload from "../middlewares/multer.js";
 import authAdmin from "../middlewares/authAdmin.js";
@@ -16,8 +17,7 @@ const adminRouter = express.Router();
 console.log("Admin router loaded");
 
 adminRouter.post(
-  "/add-lawyer",
-  (req, res, next) => {
+  "/add-lawyer", (req, res, next) => {
     console.log("POST /add-lawyer route matched!");
     next();
   },
@@ -29,8 +29,8 @@ adminRouter.post(
 adminRouter.post("/login", loginAdmin);
 adminRouter.post("/all-lawyers", authAdmin, allLawyers);
 adminRouter.post("/change-availability", authAdmin, changeAvailability);
-adminRouter.get('/appointments', authAdmin, appointmentsAdmin)
-adminRouter.post('/cancel-appointment', authAdmin, appointmentCancel)
-adminRouter.get('/dashboard', authAdmin, adminDashboard)
+adminRouter.get('/appointments', authAdmin, appointmentsAdmin);
+adminRouter.post('/cancel-appointment', authAdmin, appointmentCancel);
+adminRouter.get('/dashboard', authAdmin, adminDashboard);
 
 export default adminRouter;

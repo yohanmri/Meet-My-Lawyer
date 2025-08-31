@@ -15,6 +15,9 @@ import { LawyerContext } from './context/LawyerContext';
 import LawyerDashboard from './pages/Lawyer/LawyerDashboard';
 import LawyerAppointment from './pages/Lawyer/LawyerAppointment';
 import LawyerProfile from './pages/Lawyer/LawyerProfile';
+import Applications_lawyers from './pages/Admin/Applications_lawyers';
+
+
 const App = () => {
 
   const { aToken } = useContext(AdminContext)
@@ -32,6 +35,7 @@ const App = () => {
           <Route path='/admin-dashboard' element={<Dashboard />} />
           <Route path='/gis-dashboard' element={<GISdashboard />} />
           <Route path='/all-appointments' element={<AllApointments />} />
+          <Route path='/application-requests' element={<Applications_lawyers />} />
           <Route path='/add-lawyer' element={<AddLawyer />} />
           <Route path='/lawyer-list' element={<LawyersList />} />
 
