@@ -4,12 +4,13 @@ import {
 import express from "express";
 import upload from "../middlewares/multer.js";
 import { getApplications } from "../controllers/adminController.js";
-import authAdmin from "../middlewares/authAdmin.js"; // ADD THIS LINE
+import authAdmin from "../middlewares/authAdmin.js";
 
 const applicationRouter = express.Router();
 
 console.log("Application router loaded");
 
+// Public route - no auth needed for lawyer applications
 applicationRouter.post("/add-application",
     upload.fields([
         { name: 'application_image', maxCount: 1 },
@@ -20,6 +21,7 @@ applicationRouter.post("/add-application",
     addApplication
 );
 
+// Admin-only route - requires authentication
 applicationRouter.get('/get-applications', authAdmin, getApplications);
 
 export default applicationRouter;

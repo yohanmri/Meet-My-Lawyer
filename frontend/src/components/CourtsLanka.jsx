@@ -1,656 +1,639 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Building, Info, Map, Eye, EyeOff } from 'lucide-react'
+import React, { useState, useEffect, useContext } from 'react'
+import { MapPin, User, Navigation, Maximize2, Minimize2, Route, X } from 'lucide-react'
+import { AppContext } from '../context/AppContext'
 
-const CourtsLanka = () => {
+const NearestLawyer = () => {
+    const { lawyers } = useContext(AppContext)
+
     const navigate = (path) => {
         console.log('Navigate to:', path)
         alert(`Would navigate to: ${path}`)
     }
 
-    const mapRef = useRef(null)
-    const [map, setMap] = useState(null)
-    const [featureLayer, setFeatureLayer] = useState(null)
-    const [labelMarkers, setLabelMarkers] = useState([])
-    const [courtsLayer, setCourtsLayer] = useState(null)
-    const [mapError, setMapError] = useState(false)
-    const [nearestLawyer, setNearestLawyer] = useState(null)
+    const [userLocation, setUserLocation] = useState(null)
+    const [nearestLawyers, setNearestLawyers] = useState([])
+    const [locationError, setLocationError] = useState('')
+    const [selectedSpecialty, setSelectedSpecialty] = useState('')
+    const [isGettingLocation, setIsGettingLocation] = useState(false)
+    const [isMapExpanded, setIsMapExpanded] = useState(false)
+    const [mapView, setMapView] = useState(null)
+    const [showDirections, setShowDirections] = useState(false)
+    const [routeInfo, setRouteInfo] = useState(null)
+    const [selectedLawyerForDirections, setSelectedLawyerForDirections] = useState(null)
 
-    // DSD Boundaries controls
-    const [boundariesVisible, setBoundariesVisible] = useState(true)
-    const [labelsVisible, setLabelsVisible] = useState(true)
-
-    // Court filter state
-    const [courtFilters, setCourtFilters] = useState({
-        'Supreme Court': true,
-        'Court of Appeal': true,
-        'High Court': true,
-        'District Court': true,
-        'Magistrate\'s Court': true,
-        'Primary Court': true,
-        'Labour Tribunal': true,
-        'Family Court': true
-    })
-
-    // Court data
-    const courtsData = [
-        // Higher Courts
-        {
-            id: 1,
-            name: 'Supreme Court',
-            type: 'Supreme Court',
-            location: 'Hulftsdorp, Colombo',
-            coordinates: [79.86102, 6.93542],
-            address: 'Supreme Court Complex, Hulftsdorp, Colombo 12',
-            phone: '+94 11 2323456',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'The highest court in Sri Lanka, handling constitutional matters and final appeals.'
-        },
-        {
-            id: 2,
-            name: 'Court of Appeal',
-            type: 'Court of Appeal',
-            location: 'Hulftsdorp, Colombo',
-            coordinates: [79.86172, 6.93507],
-            address: 'Court of Appeal Complex, Hulftsdorp, Colombo 12',
-            phone: '+94 11 2323789',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'Intermediate appellate court handling appeals from lower courts.'
-        },
-        {
-            id: 3,
-            name: 'High Court Balapitiya',
-            type: 'High Court',
-            location: 'Balapitiya',
-            coordinates: [80.03946, 6.25676],
-            address: 'High Court, Balapitiya',
-            phone: '+94 34 2295123',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'High Court with jurisdiction over serious criminal and civil matters.'
-        },
-        // District Courts
-        {
-            id: 4,
-            name: 'Colombo District Court',
-            type: 'District Court',
-            location: 'Hulftsdorp, Colombo',
-            coordinates: [79.86150, 6.93615],
-            address: 'District Court Complex, Hulftsdorp, Colombo 12',
-            phone: '+94 11 2323654',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court handling civil matters and appeals from lower courts.'
-        },
-        {
-            id: 5,
-            name: 'Kandy District Court',
-            type: 'District Court',
-            location: 'Kandy',
-            coordinates: [80.61062, 7.27261],
-            address: 'District Court, Kandy',
-            phone: '+94 81 2222345',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Central Province region.'
-        },
-        {
-            id: 6,
-            name: 'Galle District Court',
-            type: 'District Court',
-            location: 'Galle',
-            coordinates: [80.22098, 6.05352],
-            address: 'District Court, Galle',
-            phone: '+94 91 2234567',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Southern Province region.'
-        },
-        {
-            id: 7,
-            name: 'Jaffna District Court',
-            type: 'District Court',
-            location: 'Jaffna',
-            coordinates: [80.01337, 9.66058],
-            address: 'District Court, Jaffna',
-            phone: '+94 21 2222456',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Northern Province region.'
-        },
-        {
-            id: 8,
-            name: 'Anuradhapura District Court',
-            type: 'District Court',
-            location: 'Anuradhapura',
-            coordinates: [80.41083, 8.33500],
-            address: 'District Court, Anuradhapura',
-            phone: '+94 25 2222789',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the North Central Province region.'
-        },
-        {
-            id: 9,
-            name: 'Kilinochchi District Court',
-            type: 'District Court',
-            location: 'Kilinochchi',
-            coordinates: [80.40888, 9.38705],
-            address: 'District Court, Kilinochchi',
-            phone: '+94 21 2287456',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Kilinochchi region.'
-        },
-        {
-            id: 10,
-            name: 'Moratuwa District Court',
-            type: 'District Court',
-            location: 'Rawathawatta West, Moratuwa',
-            coordinates: [79.88549, 6.78849],
-            address: 'District Court, Rawathawatta West, Moratuwa',
-            phone: '+94 11 2647123',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Moratuwa region.'
-        },
-        {
-            id: 11,
-            name: 'Matara District Court',
-            type: 'District Court',
-            location: 'Matara',
-            coordinates: [80.53500, 5.94800],
-            address: 'District Court, Matara',
-            phone: '+94 41 2222345',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the Matara region.'
-        },
-        {
-            id: 12,
-            name: 'Kurunegala District Court',
-            type: 'District Court',
-            location: 'Kurunegala',
-            coordinates: [80.36496, 7.48644],
-            address: 'District Court, Kurunegala',
-            phone: '+94 37 2222456',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the North Western Province region.'
-        },
-        {
-            id: 13,
-            name: 'Kotte District Court',
-            type: 'District Court',
-            location: 'Sri Jayawardenepura Kotte',
-            coordinates: [79.90248, 6.89407],
-            address: 'District Court, Sri Jayawardenepura Kotte',
-            phone: '+94 11 2889567',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'District court serving the administrative capital region.'
-        }
+    const specialties = [
+        'Corporate Law', 'Criminal Law', 'Family Law', 'Civil Law', 'Commercial Law',
+        'Constitutional Law', 'Labor Law', 'Immigration Law', 'Real Estate Law',
+        'Tax Law', 'Environmental Law', 'Intellectual Property Law'
     ]
 
-    // Dummy lawyer data
-    const lawyersData = [
-        {
-            _id: 'lawyer1',
-            name: 'Mr. Rohan Perera',
-            speciality: 'Criminal Law',
-            district: 'Colombo',
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face',
-            available: true,
-            coordinates: [79.8612, 6.9271]
-        },
-        {
-            _id: 'lawyer2',
-            name: 'Ms. Priya Silva',
-            speciality: 'Civil Law',
-            district: 'Kandy',
-            image: 'https://images.unsplash.com/photo-1494790108755-2616b9c5d14b?w=300&h=300&fit=crop&crop=face',
-            available: true,
-            coordinates: [80.6341, 7.2966]
-        },
-        {
-            _id: 'lawyer3',
-            name: 'Mr. Kasun Fernando',
-            speciality: 'Family Law',
-            district: 'Galle',
-            image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face',
-            available: false,
-            coordinates: [80.2210, 6.0535]
+    const getUserLocation = () => {
+        setLocationError('')
+        setIsGettingLocation(true)
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords
+                    setUserLocation([longitude, latitude])
+                    setIsGettingLocation(false)
+                },
+                (error) => {
+                    setLocationError('Unable to get your location. Please enable location services.')
+                    setIsGettingLocation(false)
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
+            )
+        } else {
+            setLocationError('Geolocation is not supported by this browser.')
+            setIsGettingLocation(false)
         }
-    ]
+    }
 
-    // Load Leaflet CSS
-    useEffect(() => {
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css'
-        document.head.appendChild(link)
+    const calculateDistance = (coord1, coord2) => {
+        const [lon1, lat1] = coord1
+        const [lon2, lat2] = coord2
+        const R = 6371
+        const dLat = (lat2 - lat1) * Math.PI / 180
+        const dLon = (lon2 - lon1) * Math.PI / 180
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return R * c
+    }
 
-        const esriLeafletCSS = document.createElement('link')
-        esriLeafletCSS.rel = 'stylesheet'
-        esriLeafletCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/esri-leaflet/3.0.10/esri-leaflet.css'
-        document.head.appendChild(esriLeafletCSS)
+    const findNearestLawyers = (userCoords) => {
+        if (!lawyers || lawyers.length === 0) return []
 
-        return () => {
-            document.head.removeChild(link)
-            document.head.removeChild(esriLeafletCSS)
+        let filteredLawyers = selectedSpecialty
+            ? lawyers.filter(lawyer => lawyer.speciality === selectedSpecialty)
+            : lawyers
+
+        return filteredLawyers
+            .filter(lawyer => lawyer.latitude && lawyer.longitude)
+            .map(lawyer => {
+                const lawyerCoords = [parseFloat(lawyer.longitude), parseFloat(lawyer.latitude)]
+                const distance = calculateDistance(userCoords, lawyerCoords)
+                return { ...lawyer, distance: distance.toFixed(1) }
+            })
+            .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
+            .slice(0, 10)
+    }
+
+    const toggleMapSize = () => {
+        setIsMapExpanded(!isMapExpanded)
+        // Resize map after toggle
+        setTimeout(() => {
+            if (mapView) {
+                mapView.resize()
+            }
+        }, 100)
+    }
+
+    const showDirectionsToLawyer = (lawyer) => {
+        setSelectedLawyerForDirections(lawyer)
+        setShowDirections(true)
+
+        // Calculate estimated travel time (rough estimate: 2 minutes per km)
+        const estimatedTime = Math.ceil(parseFloat(lawyer.distance) * 2)
+        setRouteInfo({
+            distance: lawyer.distance,
+            estimatedTime: estimatedTime,
+            destination: lawyer.name,
+            destinationDistrict: lawyer.district
+        })
+
+        // If map view exists, center on route
+        if (mapView) {
+            const centerLat = (userLocation[1] + parseFloat(lawyer.latitude)) / 2
+            const centerLon = (userLocation[0] + parseFloat(lawyer.longitude)) / 2
+            mapView.goTo({
+                center: [centerLon, centerLat],
+                zoom: 11
+            })
         }
-    }, [])
+    }
 
-    // Initialize Leaflet Map
+    const hideDirections = () => {
+        setShowDirections(false)
+        setRouteInfo(null)
+        setSelectedLawyerForDirections(null)
+
+        // Reset map view to original position
+        if (mapView && userLocation) {
+            mapView.goTo({
+                center: userLocation,
+                zoom: 12
+            })
+        }
+    }
+
     useEffect(() => {
-        const initializeMap = async () => {
-            try {
-                // Load Leaflet and Esri-Leaflet
-                const [L, esriLeaflet] = await Promise.all([
-                    import('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js').then(() => window.L),
-                    import('https://cdnjs.cloudflare.com/ajax/libs/esri-leaflet/3.0.10/esri-leaflet.min.js').then(() => window.L.esri)
-                ])
+        if (userLocation && lawyers.length > 0) {
+            setNearestLawyers(findNearestLawyers(userLocation))
+        }
+    }, [userLocation, lawyers, selectedSpecialty])
 
-                // Initialize map
-                const mapInstance = L.map(mapRef.current).setView([7.8731, 80.7718], 8)
+    useEffect(() => {
+        if (userLocation && nearestLawyers.length > 0) {
+            // Initialize ArcGIS map
+            const script = document.createElement('script')
+            script.src = 'https://js.arcgis.com/4.28/init.js'
+            script.onload = () => {
+                require([
+                    'esri/Map',
+                    'esri/views/MapView',
+                    'esri/Graphic',
+                    'esri/geometry/Point',
+                    'esri/geometry/Circle',
+                    'esri/geometry/Polyline',
+                    'esri/symbols/SimpleMarkerSymbol',
+                    'esri/symbols/PictureMarkerSymbol',
+                    'esri/symbols/SimpleFillSymbol',
+                    'esri/symbols/SimpleLineSymbol',
+                    'esri/PopupTemplate'
+                ], (Map, MapView, Graphic, Point, Circle, Polyline, SimpleMarkerSymbol, PictureMarkerSymbol, SimpleFillSymbol, SimpleLineSymbol, PopupTemplate) => {
+                    const map = new Map({
+                        basemap: 'streets-navigation-vector'
+                    })
 
-                // Add basemap
-                L.esri.basemapLayer('Topographic').addTo(mapInstance)
+                    const view = new MapView({
+                        container: 'arcgis-map',
+                        map: map,
+                        center: userLocation,
+                        zoom: 12
+                    })
 
-                setMap(mapInstance)
+                    setMapView(view)
 
-                // Create DSD boundaries layer
-                const dsdLayer = L.esri.featureLayer({
-                    url: 'https://services1.arcgis.com/tMAq108b7itjkui5/ArcGIS/rest/services/SL_DSD_codes/FeatureServer/0',
-                    style: function (feature) {
-                        return {
-                            color: '#2c3e50',
-                            weight: 1,
-                            fillOpacity: 0.7,
-                            fillColor: '#74b9ff'
-                        }
-                    },
-                    onEachFeature: function (feature, layer) {
-                        // Create popup content for DSD boundaries
-                        let popupContent = '<div style="font-family: Arial, sans-serif;"><h4 style="margin: 0 0 10px 0; color: #2c3e50;">SL DSD codes</h4>'
+                    // Create buffer around user location (5km radius)
+                    const bufferGeometry = new Circle({
+                        center: new Point({
+                            longitude: userLocation[0],
+                            latitude: userLocation[1]
+                        }),
+                        radius: 5,
+                        radiusUnit: "kilometers"
+                    })
 
-                        for (let key in feature.properties) {
-                            if (feature.properties.hasOwnProperty(key) && feature.properties[key] !== null) {
-                                const displayKey = key.replace(/_/g, ' ').toUpperCase()
-                                popupContent += `<div style="margin-bottom: 5px;"><strong>${displayKey}:</strong> ${feature.properties[key]}</div>`
+                    const bufferGraphic = new Graphic({
+                        geometry: bufferGeometry,
+                        symbol: new SimpleFillSymbol({
+                            color: [255, 255, 0, 0.2], // Light yellow with transparency
+                            outline: {
+                                color: [255, 255, 0, 0.6],
+                                width: 2
                             }
-                        }
-
-                        popupContent += '</div>'
-
-                        layer.bindPopup(popupContent, {
-                            maxWidth: 300,
-                            className: 'custom-popup'
                         })
+                    })
 
-                        // Add hover effects
-                        layer.on('mouseover', function (e) {
-                            e.target.setStyle({
-                                weight: 2,
-                                fillOpacity: 0.9
+                    view.graphics.add(bufferGraphic)
+
+                    // Create custom user location icon
+                    const userMarker = new Graphic({
+                        geometry: new Point({
+                            longitude: userLocation[0],
+                            latitude: userLocation[1]
+                        }),
+                        symbol: new PictureMarkerSymbol({
+                            url: "data:image/svg+xml;base64," + btoa(`
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#007BFF" stroke="white" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                    <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                    <line x1="15" y1="9" x2="15.01" y2="9"/>
+                                    <circle cx="12" cy="6" r="2" fill="white"/>
+                                </svg>
+                            `),
+                            width: "28px",
+                            height: "28px"
+                        }),
+                        popupTemplate: new PopupTemplate({
+                            title: "Your Location",
+                            content: "You are here"
+                        })
+                    })
+
+                    view.graphics.add(userMarker)
+
+                    // Add lawyer markers with custom icons and click handlers
+                    nearestLawyers.forEach((lawyer, index) => {
+                        const isNearest = index === 0
+                        const iconColor = isNearest ? "#6A0610" : "#D00C1F"
+
+                        const lawyerMarker = new Graphic({
+                            geometry: new Point({
+                                longitude: parseFloat(lawyer.longitude),
+                                latitude: parseFloat(lawyer.latitude)
+                            }),
+                            symbol: new PictureMarkerSymbol({
+                                url: "data:image/svg+xml;base64," + btoa(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${iconColor}" stroke="white" stroke-width="1">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                                        ${isNearest ? '<circle cx="12" cy="12" r="2" fill="white"/>' : ''}
+                                    </svg>
+                                `),
+                                width: isNearest ? "32px" : "24px",
+                                height: isNearest ? "32px" : "24px"
+                            }),
+                            popupTemplate: new PopupTemplate({
+                                title: `${isNearest ? '🎯 ' : ''}${lawyer.name}`,
+                                content: `
+                                    <div style="font-family: Arial, sans-serif;">
+                                        ${isNearest ? '<div style="color: #6A0610; font-weight: bold; margin-bottom: 8px;">⭐ NEAREST LAWYER</div>' : ''}
+                                        <p><strong>Specialty:</strong> ${lawyer.speciality}</p>
+                                        <p><strong>Experience:</strong> ${lawyer.experience} years</p>
+                                        <p><strong>Distance:</strong> ${lawyer.distance} km</p>
+                                        <p><strong>Available:</strong> ${lawyer.available ? '✅ Yes' : '❌ No'}</p>
+                                        <p><strong>District:</strong> ${lawyer.district}</p>
+                                        <p><strong>Method:</strong> ${lawyer.consultationMethod}</p>
+                                    </div>
+                                `
                             })
                         })
 
-                        layer.on('mouseout', function (e) {
-                            e.target.setStyle({
-                                weight: 1,
-                                fillOpacity: 0.7
-                            })
-                        })
-                    }
-                }).addTo(mapInstance)
-
-                setFeatureLayer(dsdLayer)
-
-                // Fit map to layer bounds when loaded
-                dsdLayer.on('load', function () {
-                    mapInstance.fitBounds(dsdLayer.getBounds())
-                    // Create labels after boundaries load
-                    createDSDLabels(mapInstance, dsdLayer)
-                })
-
-                // Create courts layer
-                const courtsLayerGroup = L.layerGroup().addTo(mapInstance)
-                setCourtsLayer(courtsLayerGroup)
-
-                // Add court markers
-                addCourtMarkers(courtsLayerGroup)
-
-            } catch (error) {
-                console.error('Error initializing map:', error)
-                setMapError(true)
-            }
-        }
-
-        if (mapRef.current) {
-            initializeMap()
-        }
-
-        return () => {
-            if (map) {
-                map.remove()
-            }
-        }
-    }, [])
-
-    // Create DSD labels
-    const createDSDLabels = async (mapInstance, dsdLayer) => {
-        try {
-            const L = window.L
-            const markers = []
-
-            dsdLayer.eachFeature((layer) => {
-                const feature = layer.feature
-                const labelText = feature.properties.DSD_N || feature.properties.NAME || feature.properties.DSD_NAME || 'Unknown'
-
-                const bounds = layer.getBounds()
-                const center = bounds.getCenter()
-
-                const labelMarker = L.marker(center, {
-                    icon: L.divIcon({
-                        className: 'label-icon',
-                        html: `<div style="background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 3px; font-size: 10px; font-weight: bold; text-align: center; border: 1px solid #ccc;">${labelText}</div>`,
-                        iconSize: [100, 20],
-                        iconAnchor: [50, 10]
+                        view.graphics.add(lawyerMarker)
                     })
                 })
-
-                labelMarker.addTo(mapInstance)
-                markers.push(labelMarker)
-            })
-
-            setLabelMarkers(markers)
-        } catch (error) {
-            console.error('Error creating labels:', error)
-        }
-    }
-
-    // Create court icon SVG
-    const createCourtIcon = (color) => {
-        const svg = `
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7V9H22V7L12 2Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M4 9V19H6V9H4Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M8 9V19H10V9H8Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M12 9V19H14V9H12Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M16 9V19H18V9H16Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M20 9V19H22V9H20Z" fill="${color}" stroke="white" stroke-width="1"/>
-                <path d="M2 19H22V21H2V19Z" fill="${color}" stroke="white" stroke-width="1"/>
-            </svg>
-        `
-        return 'data:image/svg+xml;base64,' + btoa(svg)
-    }
-
-    // Add court markers
-    const addCourtMarkers = (layerGroup) => {
-        if (!window.L || !layerGroup) return
-
-        const L = window.L
-        layerGroup.clearLayers()
-
-        const filteredCourts = courtsData.filter(court => courtFilters[court.type])
-
-        filteredCourts.forEach(court => {
-            const nearestLawyer = findNearestLawyer(court)
-
-            const popupContent = `
-                <div style="padding: 10px; max-width: 350px; font-family: Arial, sans-serif;">
-                    <div style="border-bottom: 2px solid ${getCourtColor(court.type)}; padding-bottom: 10px; margin-bottom: 15px;">
-                        <h3 style="margin: 0 0 5px 0; color: #333; font-size: 16px; font-weight: bold;">${court.name}</h3>
-                        <span style="background: ${getCourtColor(court.type)}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
-                            ${court.type}
-                        </span>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; line-height: 1.4;">
-                            <strong>📍 Address:</strong><br>${court.address}
-                        </p>
-                        <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
-                            <strong>📞 Phone:</strong> ${court.phone}
-                        </p>
-                        <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
-                            <strong>🕐 Hours:</strong> ${court.workingHours}
-                        </p>
-                        <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.4;">
-                            <strong>ℹ️ Description:</strong><br>${court.description}
-                        </p>
-                    </div>
-                    
-                    ${nearestLawyer ? `
-                        <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 15px; border-radius: 12px; color: white; position: relative;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #f3f4f6;">⚖️ Nearest Lawyer</h4>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="position: relative;">
-                                    <img src="${nearestLawyer.image}" alt="${nearestLawyer.name}" 
-                                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2);">
-                                    <div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; 
-                                               background: ${nearestLawyer.available ? '#10b981' : '#ef4444'}; 
-                                               border-radius: 50%; border: 2px solid #1f2937;"></div>
-                                </div>
-                                <div style="flex: 1;">
-                                    <p style="margin: 0 0 3px 0; font-weight: bold; font-size: 13px; color: white;">
-                                        ${nearestLawyer.name}
-                                    </p>
-                                    <p style="margin: 0 0 2px 0; font-size: 12px; color: #d1d5db;">
-                                        ${nearestLawyer.speciality}
-                                    </p>
-                                    <p style="margin: 0; font-size: 11px; color: #9ca3af;">
-                                        ${nearestLawyer.district}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `
-
-            const marker = L.marker([court.coordinates[1], court.coordinates[0]], {
-                icon: L.icon({
-                    iconUrl: createCourtIcon(getCourtColor(court.type)),
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 32],
-                    popupAnchor: [0, -32]
-                })
-            }).bindPopup(popupContent, {
-                maxWidth: 400,
-                className: 'court-popup'
-            })
-
-            layerGroup.addLayer(marker)
-        })
-    }
-
-    // Find nearest lawyer to selected court
-    const findNearestLawyer = (court) => {
-        if (!court) return null
-
-        let nearestLawyer = null
-        let minDistance = Infinity
-
-        lawyersData.forEach(lawyer => {
-            const distance = Math.sqrt(
-                Math.pow(lawyer.coordinates[0] - court.coordinates[0], 2) +
-                Math.pow(lawyer.coordinates[1] - court.coordinates[1], 2)
-            )
-            if (distance < minDistance) {
-                minDistance = distance
-                nearestLawyer = lawyer
             }
-        })
+            document.head.appendChild(script)
 
-        return nearestLawyer
-    }
-
-    // Get color based on court type
-    const getCourtColor = (type) => {
-        const colors = {
-            'Supreme Court': '#8B0000',
-            'Court of Appeal': '#B22222',
-            'High Court': '#DC143C',
-            'District Court': '#FF4500',
-            'Magistrate\'s Court': '#FF6347',
-            'Primary Court': '#FF7F50',
-            'Labour Tribunal': '#4682B4',
-            'Family Court': '#9370DB'
+            // Load ArcGIS CSS
+            const link = document.createElement('link')
+            link.rel = 'stylesheet'
+            link.href = 'https://js.arcgis.com/4.28/esri/themes/light/main.css'
+            document.head.appendChild(link)
         }
-        return colors[type] || '#666666'
-    }
-
-    // Handle filter changes
-    const handleFilterChange = (courtType) => {
-        const newFilters = {
-            ...courtFilters,
-            [courtType]: !courtFilters[courtType]
-        }
-        setCourtFilters(newFilters)
-
-        // Update court markers
-        if (courtsLayer) {
-            addCourtMarkers(courtsLayer)
-        }
-    }
-
-    // Handle DSD boundaries toggle
-    const toggleBoundaries = () => {
-        if (!map || !featureLayer) return
-
-        if (boundariesVisible) {
-            map.removeLayer(featureLayer)
-        } else {
-            map.addLayer(featureLayer)
-        }
-        setBoundariesVisible(!boundariesVisible)
-    }
-
-    // Handle DSD labels toggle
-    const toggleLabels = () => {
-        if (!map) return
-
-        if (labelsVisible) {
-            labelMarkers.forEach(marker => {
-                map.removeLayer(marker)
-            })
-        } else {
-            labelMarkers.forEach(marker => {
-                map.addLayer(marker)
-            })
-        }
-        setLabelsVisible(!labelsVisible)
-    }
+    }, [userLocation, nearestLawyers])
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Courts Lanka</h1>
-                    <p className="text-gray-600 max-w-2xl mx-auto">
-                        Interactive map of Sri Lankan courts with DSD administrative boundaries. Click on court markers or boundaries to view detailed information.
-                    </p>
+        <div className="min-h-screen py-6">
+            <div className='flex flex-col items-center gap-4 py-5 text-gray-800' id='speciality'>
+                <h1 className='text-3xl font-medium'>Find Your Nearest Lawyer</h1>
+                <p className='sm:w-1/3 text-center text-sm'>Are you In a rush? Simply Click the "My Location" button and filter and get your nearest lawyer</p>
+            </div>
+            <div className="max-w-7xl mx-auto px-4">
+
+                {/* Filters */}
+                <div className="border border-gray-200 rounded-2xl px-4 py-2 mb-4 shadow-sm">
+                    <div className="flex flex-wrap gap-3 items-end">
+                        <div className="flex-1 min-w-[200px]">
+                            <select
+                                value={selectedSpecialty}
+                                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                                className="w-full px-3 py-1.5 text-sm border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
+                                style={{ backgroundColor: '#D8D8E3' }}
+                            >
+                                <option value="">All Specialties</option>
+                                {specialties.map((spec) => (
+                                    <option key={spec} value={spec}>{spec}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <button
+                            onClick={getUserLocation}
+                            disabled={isGettingLocation}
+                            className="px-4 py-1.5 text-sm bg-gradient-to-r from-[#6A0610] to-[#D00C1F] text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                            <MapPin className="w-4 h-4" />
+                            {isGettingLocation ? 'Getting...' : 'My Location'}
+                        </button>
+                        {selectedSpecialty && (
+                            <button
+                                onClick={() => setSelectedSpecialty('')}
+                                className="px-3 py-1.5 text-sm text-[#6A0610] border border-[#6A0610] rounded-full hover:bg-[#6A0610] hover:text-white transition-all"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    {locationError && (
+                        <div className="mt-2 text-red-600 text-sm">{locationError}</div>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    {/* Filters Sidebar */}
-                    <div className="lg:col-span-1 space-y-6">
-                        {/* DSD Boundaries Controls */}
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-                                <Map className="w-5 h-5" />
-                                DSD Boundaries
-                            </h3>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={toggleBoundaries}
-                                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${boundariesVisible
-                                        ? 'bg-blue-50 border-2 border-blue-200 text-blue-800'
-                                        : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                        }`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        {boundariesVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                        Show Boundaries
-                                    </span>
-                                </button>
-                                <button
-                                    onClick={toggleLabels}
-                                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${labelsVisible
-                                        ? 'bg-blue-50 border-2 border-blue-200 text-blue-800'
-                                        : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                        }`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        {labelsVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                        Show Labels
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Court Type Filters */}
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
-                                <Building className="w-5 h-5" />
-                                Court Types
-                            </h3>
-                            <div className="space-y-3">
-                                {Object.keys(courtFilters).map(courtType => (
-                                    <label key={courtType} className="flex items-center gap-3 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={courtFilters[courtType]}
-                                            onChange={() => handleFilterChange(courtType)}
-                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                {/* Lawyers Layout - Left Recommended, Right Grid */}
+                {userLocation && nearestLawyers.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-80 mb-4">
+                        {/* Recommended Lawyer - Left Side (3 columns) */}
+                        <div className="lg:col-span-3">
+                            <div className="border border-gray-200 rounded-xl p-3 h-full shadow-sm">
+                                <div className="flex gap-4 h-full">
+                                    {/* Image Section */}
+                                    <div className="flex-shrink-0 relative">
+                                        <img
+                                            className='w-48 h-full object-cover rounded-lg'
+                                            src={nearestLawyers[0].image}
+                                            alt={nearestLawyers[0].name}
                                         />
-                                        <span
-                                            className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                                            style={{ backgroundColor: getCourtColor(courtType) }}
-                                        />
-                                        <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                                            {courtType}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                                        <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium text-white shadow-lg ${nearestLawyers[0].available ? 'bg-green-500' : 'bg-red-500'}`}>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1.5 h-1.5 rounded-full"></div>
+                                                {nearestLawyers[0].available ? 'Available' : 'Busy'}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    {/* Map Section */}
-                    <div className="lg:col-span-3">
-                        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                            {mapError ? (
-                                <div className="w-full h-96 flex items-center justify-center bg-gray-100">
-                                    <div className="text-center">
-                                        <p className="text-gray-500 mb-2">Unable to load map</p>
-                                        <p className="text-sm text-gray-400">Please check your internet connection</p>
+                                    {/* Details Section */}
+                                    <div className="flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-gray-900 text-xl font-bold mb-1">Recommended</h3>
+                                            <h4 className="text-gray-800 text-lg font-semibold mb-2">{nearestLawyers[0].name}</h4>
+                                            <p className="text-[#6A0610] text-sm font-medium mb-3">{nearestLawyers[0].speciality}</p>
+
+                                            <div className='space-y-2'>
+                                                <div className='flex items-center justify-between text-sm'>
+                                                    <span className='text-gray-700'>Experience</span>
+                                                    <span className='font-semibold text-gray-900'>{nearestLawyers[0].experience} Years</span>
+                                                </div>
+                                                <div className='flex items-center justify-between text-sm'>
+                                                    <span className='text-gray-700'>Location</span>
+                                                    <span className='font-semibold text-gray-900'>{nearestLawyers[0].district}</span>
+                                                </div>
+                                                <div className='flex items-center justify-between text-sm'>
+                                                    <span className='text-gray-700'>Distance</span>
+                                                    <span className='font-semibold text-gray-900'>{nearestLawyers[0].distance} km</span>
+                                                </div>
+                                                <div className='flex items-center justify-between text-sm'>
+                                                    <span className='text-gray-700'>Method</span>
+                                                    <span className='font-semibold text-gray-900'>{nearestLawyers[0].consultationMethod}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 mt-3">
+                                            <button
+                                                onClick={() => navigate(`/appointment/${nearestLawyers[0]._id}`)}
+                                                className="flex-1 py-2 bg-gradient-to-r from-[#6A0610] to-[#D00C1F] text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                                            >
+                                                Book Appointment
+                                            </button>
+                                            <button
+                                                onClick={() => showDirectionsToLawyer(nearestLawyers[0])}
+                                                className="px-3 py-2 bg-white border border-[#6A0610] text-[#6A0610] rounded-lg hover:bg-[#6A0610] hover:text-white transition-all duration-200"
+                                                title="Get Directions"
+                                            >
+                                                <Navigation className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div
-                                    ref={mapRef}
-                                    className="w-full h-96 lg:h-[600px]"
-                                    style={{ minHeight: '700px' }}
-                                />
-                            )}
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Instructions */}
-                <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0">
-                            <Info className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <h4 className="text-blue-900 font-medium mb-1">Map Features</h4>
-                            <ul className="text-blue-700 text-sm space-y-1">
-                                <li>• Click on court markers to view detailed information and nearest lawyers</li>
-                                <li>• Click on DSD boundaries to view administrative division details</li>
-                                <li>• Toggle DSD boundaries and labels using the sidebar controls</li>
-                                <li>• Filter court types using the checkboxes</li>
-                                <li>• Hover over boundaries for visual feedback</li>
-                                <li>• Zoom and pan to explore different regions of Sri Lanka</li>
-                            </ul>
-                        </div>
+                        {/* Other Lawyers - Right Side (2 columns) */}
+                        {nearestLawyers.length > 1 && (
+                            <div className="lg:col-span-2">
+                                <div className="border border-gray-200 rounded-xl p-3 h-full shadow-sm">
+                                    <h3 className="text-lg font-semibold mb-3 text-gray-900">Other Nearby</h3>
+                                    <div className="h-64 flex flex-col gap-2">
+                                        {/* Only 2 lawyers */}
+                                        <div className="grid grid-cols-2 gap-2 flex-1">
+                                            {nearestLawyers.slice(1, 3).map((item, index) => (
+                                                <div
+                                                    key={item._id}
+                                                    className='bg-gradient-to-br from-black to-[#030303] rounded-lg p-2 cursor-pointer hover:translate-y-[-2px] transition-all duration-300 shadow-md hover:shadow-lg h-full flex flex-col relative'
+                                                >
+                                                    {/* Profile Image with Availability Badge */}
+                                                    <div className="flex justify-center mb-1 relative">
+                                                        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-300">
+                                                            <img
+                                                                src={item.image}
+                                                                alt={item.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        {/* Availability Badge */}
+                                                        <div className="absolute top-[-2px] left-[-2px] flex items-center gap-1 bg-gray-700 bg-opacity-80 px-1 py-1 rounded-full">
+                                                            <div className={`w-1 h-1 ${item.available ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Name */}
+                                                    <h2 className="text-white text-xs font-medium text-center mb-1 leading-tight truncate">
+                                                        {item.name}
+                                                    </h2>
+
+                                                    {/* Specialized Area */}
+                                                    <p className="text-gray-300 text-xs text-center mb-1 truncate">
+                                                        {item.speciality}
+                                                    </p>
+
+                                                    {/* District and Distance */}
+                                                    <p className="text-gray-400 text-xs text-center mb-2 truncate">
+                                                        {item.distance} km
+                                                    </p>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="flex gap-1 mt-auto">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/appointment/${item._id}`);
+                                                                scroll(0, 0);
+                                                            }}
+                                                            className="flex-1 h-7 bg-gradient-to-r from-[#6A0610] to-[#D00C1F] text-white rounded text-xs font-medium transition-all hover:shadow-md"
+                                                        >
+                                                            View
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                showDirectionsToLawyer(item);
+                                                            }}
+                                                            className="h-7 px-2 bg-white bg-opacity-20 text-white rounded text-xs transition-all hover:bg-opacity-30"
+                                                            title="Get Directions"
+                                                        >
+                                                            <Navigation className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
+                )}
+
+                {/* Enhanced ArcGIS Map with Controls */}
+                {userLocation && nearestLawyers.length > 0 && (
+                    <div className={`border border-gray-200 rounded-xl shadow-sm transition-all duration-300 relative ${isMapExpanded
+                        ? 'fixed inset-4 z-50 bg-white'
+                        : 'h-96'
+                        }`}>
+                        {/* Map Controls */}
+                        <div className="absolute top-4 right-4 z-10 flex gap-2">
+                            <button
+                                onClick={() => showDirectionsToLawyer(nearestLawyers[0])}
+                                className={`p-2 rounded-lg shadow-lg transition-all ${showDirections
+                                    ? 'bg-[#6A0610] text-white'
+                                    : 'bg-white text-[#6A0610] hover:bg-gray-50'
+                                    }`}
+                                title="Show Directions to Nearest Lawyer"
+                            >
+                                <Navigation className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={toggleMapSize}
+                                className="p-2 bg-white text-[#6A0610] rounded-lg shadow-lg hover:bg-gray-50 transition-all"
+                                title={isMapExpanded ? "Minimize Map" : "Expand Map"}
+                            >
+                                {isMapExpanded ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                            </button>
+                        </div>
+
+                        {/* Map Legend */}
+                        <div className="absolute top-4 left-4 z-10 bg-white bg-opacity-95 rounded-lg p-3 shadow-lg">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Map Legend</h4>
+                            <div className="space-y-1 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                                    <span>Your Location</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-[#6A0610] rounded-full"></div>
+                                    <span>Nearest Lawyer</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-[#D00C1F] rounded-full"></div>
+                                    <span>Other Lawyers</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 bg-yellow-300 rounded-full opacity-50"></div>
+                                    <span>5km Buffer Zone</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Custom Directions Panel */}
+                        {showDirections && routeInfo && selectedLawyerForDirections && (
+                            <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg p-4 max-w-sm border border-gray-200">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                        <Route className="w-4 h-4 text-[#6A0610]" />
+                                        Directions
+                                    </h4>
+                                    <button
+                                        onClick={hideDirections}
+                                        className="text-gray-500 hover:text-gray-700 p-1"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            <span className="text-xs font-medium text-gray-700">From: Your Location</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-[#6A0610] rounded-full"></div>
+                                            <span className="text-xs font-medium text-gray-700">To: {routeInfo.destination}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">{routeInfo.destinationDistrict}</p>
+                                    </div>
+
+                                    <div className="flex justify-between items-center py-2 border-t border-gray-100">
+                                        <div className="text-center">
+                                            <p className="text-lg font-bold text-[#6A0610]">{routeInfo.distance} km</p>
+                                            <p className="text-xs text-gray-500">Distance</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-lg font-bold text-green-600">{routeInfo.estimatedTime} min</p>
+                                            <p className="text-xs text-gray-500">Est. Time</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => navigate(`/appointment/${selectedLawyerForDirections._id}`)}
+                                            className="flex-1 py-2 px-3 bg-gradient-to-r from-[#6A0610] to-[#D00C1F] text-white rounded-lg text-xs font-medium hover:shadow-lg transition-all"
+                                        >
+                                            Book Appointment
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                // Open in Google Maps
+                                                const googleMapsUrl = `https://www.google.com/maps/dir/${userLocation[1]},${userLocation[0]}/${selectedLawyerForDirections.latitude},${selectedLawyerForDirections.longitude}`;
+                                                window.open(googleMapsUrl, '_blank');
+                                            }}
+                                            className="px-3 py-2 bg-white border border-[#6A0610] text-[#6A0610] rounded-lg hover:bg-[#6A0610] hover:text-white transition-all text-xs font-medium"
+                                            title="Open in Google Maps"
+                                        >
+                                            <MapPin className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div id="arcgis-map" className="w-full h-full rounded-xl"></div>
+                    </div>
+                )}
+
+                {/* Map Size Info */}
+                {userLocation && nearestLawyers.length > 0 && (
+                    <div className="mt-4 text-center">
+                        <p className="text-sm text-gray-600">
+                            Click the expand button to view the map in full screen • Yellow area shows 5km search radius
+                        </p>
+                    </div>
+                )}
+
+                {/* No Location State */}
+                {!userLocation && (
+                    <div className="border border-gray-200 rounded-2xl p-6 shadow-sm text-center h-80 flex flex-col justify-center">
+                        <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                            <MapPin className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Find Lawyers Near You</h3>
+                        <p className="text-gray-600 mb-4 text-sm">
+                            Get your location to find the nearest available lawyers
+                        </p>
+                        <button
+                            onClick={getUserLocation}
+                            disabled={isGettingLocation}
+                            className="px-6 py-2 bg-gradient-to-r from-[#6A0610] to-[#D00C1F] text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+                        >
+                            <MapPin className="w-4 h-4" />
+                            {isGettingLocation ? 'Getting Location...' : 'Get My Location'}
+                        </button>
+                    </div>
+                )}
+
+                {/* No Results */}
+                {userLocation && nearestLawyers.length === 0 && (
+                    <div className="border border-gray-200 rounded-2xl p-6 shadow-sm text-center h-80 flex flex-col justify-center">
+                        <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                            <User className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Lawyers Found</h3>
+                        <p className="text-gray-600 text-sm">
+                            {selectedSpecialty
+                                ? `No ${selectedSpecialty} specialists found near you.`
+                                : 'No lawyers found near your location.'
+                            }
+                        </p>
+                        {selectedSpecialty && (
+                            <button
+                                onClick={() => setSelectedSpecialty('')}
+                                className="mt-3 px-4 py-2 text-[#6A0610] border border-[#6A0610] rounded-full hover:bg-[#6A0610] hover:text-white transition-all text-sm"
+                            >
+                                Clear Filter
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )
 }
 
-export default CourtsLanka
+export default NearestLawyer
