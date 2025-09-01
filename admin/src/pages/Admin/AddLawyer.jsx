@@ -5,7 +5,6 @@ import { toast } from 'react-toastify'
 import axios from 'axios';
 import Cropper from 'react-easy-crop'
 
-
 export default function LawyerRegistrationForm() {
 
     const [lawyerImg, setLawyerImg] = useState(false)
@@ -138,8 +137,27 @@ export default function LawyerRegistrationForm() {
         event.preventDefault()
 
         try {
-            if (!lawyerImg) {
-                return toast.error('Image Not Selected')
+            // Validate required fields
+            if (!name.trim()) {
+                return toast.error('Name is required')
+            }
+            if (!email.trim()) {
+                return toast.error('Email is required')
+            }
+            if (!phone.trim()) {
+                return toast.error('Phone number is required')
+            }
+            if (!gender) {
+                return toast.error('Gender is required')
+            }
+            if (!licenseNumber.trim()) {
+                return toast.error('License number is required')
+            }
+            if (!district) {
+                return toast.error('District is required')
+            }
+            if (!primaryCourt.trim()) {
+                return toast.error('Primary Court is required')
             }
 
             // Validate at least one language is selected
@@ -147,48 +165,54 @@ export default function LawyerRegistrationForm() {
                 return toast.error('Please select at least one language')
             }
 
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(lawyerImg.type)) {
-                return toast.error('Please select a valid image file (JPEG, PNG, WebP)')
-            }
-
-            // Validate file size (5MB limit)
-            if (lawyerImg.size > 5 * 1024 * 1024) {
-                return toast.error('Image size should be less than 5MB')
-            }
-
+            // Create FormData
             const formData = new FormData()
-            formData.append('image', lawyerImg);
-            formData.append('name', name);
-            formData.append('email', email);
-            formData.append('phone', phone);
+
+            // Only append image if it exists
+            if (lawyerImg) {
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(lawyerImg.type)) {
+                    return toast.error('Please select a valid image file (JPEG, PNG, WebP)')
+                }
+
+                // Validate file size (5MB limit)
+                if (lawyerImg.size > 5 * 1024 * 1024) {
+                    return toast.error('Image size should be less than 5MB')
+                }
+
+                formData.append('image', lawyerImg);
+            }
+
+            // Append all form data
+            formData.append('name', name.trim());
+            formData.append('email', email.trim());
+            formData.append('phone', phone.trim());
             formData.append('gender', gender);
-            formData.append('dob', dateOfBirth);
-            formData.append('password', password);
+            formData.append('dob', dateOfBirth || '');
+            formData.append('password', password || '');
             formData.append('speciality', speciality);
-            formData.append('degree', degree);
-            formData.append('office_phone', officePhone);
-            formData.append('license_number', licenseNumber);
-            formData.append('bar_association', barAssociation);
-            formData.append('experience', experience);
+            formData.append('degree', degree.trim());
+            formData.append('office_phone', officePhone.trim());
+            formData.append('license_number', licenseNumber.trim());
+            formData.append('bar_association', barAssociation.trim());
+            formData.append('experience', experience || '0');
             formData.append('legal_professionals', professionalType);
-            formData.append('fees', Number(consultationFees));
-            formData.append('court1', primaryCourt);
-            formData.append('online_link', onlineLink);
+            formData.append('fees', consultationFees ? Number(consultationFees) : 0);
+            formData.append('court1', primaryCourt.trim());
+            formData.append('online_link', onlineLink.trim());
             formData.append('district', district);
             formData.append('method', method);
 
-
             // Address as JSON string since schema expects Object
             formData.append('address', JSON.stringify({
-                street: address,
+                street: address.trim(),
                 district: district
             }));
 
-            formData.append('latitude', Number(latitude));
-            formData.append('longitude', Number(longitude));
-            formData.append('about', additionalInfo);
+            formData.append('latitude', latitude ? Number(latitude) : 0);
+            formData.append('longitude', longitude ? Number(longitude) : 0);
+            formData.append('about', additionalInfo.trim());
 
             // Add missing required fields
             formData.append('available', true);
@@ -205,16 +229,21 @@ export default function LawyerRegistrationForm() {
                 console.log(`${key}: ${value}`);
             }
 
-
-            const { data } = await axios.post(backendUrl + '/api/admin/add-lawyer', formData, { headers: { aToken } })
+            const { data } = await axios.post(backendUrl + '/api/admin/add-lawyer', formData, {
+                headers: {
+                    aToken,
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
 
             if (data.success) {
                 toast.success(data.message)
+                // Reset form
                 setLawyerImg(false)
                 setName('')
                 setEmail('')
                 setPhone('')
-                setGender('')
+                setGender('Male')
                 setDateOfBirth('')
                 setPassword('')
                 setDegree('')
@@ -222,48 +251,25 @@ export default function LawyerRegistrationForm() {
                 setLicenseNumber('')
                 setBarAssociation('')
                 setExperience('')
-                setProfessionalType('')
+                setProfessionalType('Attorney-at-Law')
                 setConsultationFees('')
                 setPrimaryCourt('')
                 setOnlineLink('')
                 setMethod('both')
-                setDistrict('')
+                setDistrict('Colombo')
                 setAddress('')
                 setLatitude('')
                 setLongitude('')
+                setLanguages([])
                 setAdditionalInfo('')
             } else {
                 toast.error(data.message)
             }
 
-            // TODO: Add actual API call here
-            /*
-            const response = await fetch(`${backendUrl}/api/admin/add-lawyer`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${aToken}`
-                },
-                body: formData
-            });
-    
-            if (response.ok) {
-                toast.success('Lawyer added successfully');
-                // Reset form or redirect
-            } else {
-                const errorData = await response.json();
-                toast.error(errorData.message || 'Failed to add lawyer');
-            }
-            */
-
         } catch (error) {
-            toast.error('error.message');
+            toast.error(error.response?.data?.message || error.message || 'Failed to add lawyer');
             console.log('Error:', error);
-
         }
-
-
-
-
     }
 
     return (
@@ -272,7 +278,7 @@ export default function LawyerRegistrationForm() {
             <div className='bg-white px-8 py-8 border rounded w-full max-h-[80vh] overflow-y-scroll'>
                 <div className='max-w-full mx-auto'>
 
-                    {/* Fixed: Four Column Grid instead of 5 */}
+                    {/* Four Column Grid */}
                     <div className='grid grid-cols-1 lg:grid-cols-4 gap-4 h-full'>
 
                         {/* Left Column - Personal & Location */}
@@ -302,9 +308,11 @@ export default function LawyerRegistrationForm() {
                                 </div>
                             </div>
 
-                            {/* Languages */}
+                            {/* Languages - REQUIRED */}
                             <div className='bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex-1'>
-                                <h3 className='text-lg font-semibold text-[#515151] mb-4'>Languages Spoken</h3>
+                                <h3 className='text-lg font-semibold text-[#515151] mb-4'>
+                                    Languages Spoken <span className="text-red-500">*</span>
+                                </h3>
                                 <div className='flex flex-col gap-3'>
                                     <label className='flex items-center gap-3 text-sm text-[#515151]'>
                                         <input
@@ -367,7 +375,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-22'
                                             value={additionalInfo}
                                             onChange={(e) => setAdditionalInfo(e.target.value)}
-                                            required
                                         ></textarea>
                                     </div>
                                 </div>
@@ -380,45 +387,49 @@ export default function LawyerRegistrationForm() {
                                 <h3 className='text-lg font-semibold text-[#515151] mb-4'>Personal Information</h3>
                                 <div className='grid grid-cols-1 gap-3'>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Lawyer Name</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            Lawyer Name <span className="text-red-500">*</span>
+                                        </p>
                                         <input
                                             type="text"
                                             placeholder='Name'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             onChange={(e) => setName(e.target.value)}
                                             value={name}
                                         />
                                     </div>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Lawyer Email</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            Lawyer Email <span className="text-red-500">*</span>
+                                        </p>
                                         <input
                                             type="email"
                                             placeholder='Email'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             onChange={(e) => setEmail(e.target.value)}
                                             value={email}
                                         />
                                     </div>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Phone Number</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            Phone Number <span className="text-red-500">*</span>
+                                        </p>
                                         <input
                                             type="tel"
                                             placeholder='Phone'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             onChange={(e) => setPhone(e.target.value)}
                                             value={phone}
                                         />
                                     </div>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Gender</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            Gender <span className="text-red-500">*</span>
+                                        </p>
                                         <select
                                             onChange={(e) => setGender(e.target.value)}
                                             value={gender}
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                         >
                                             <option value="Male">Male</option>
                                             <option value="Female">Female</option>
@@ -430,7 +441,6 @@ export default function LawyerRegistrationForm() {
                                         <input
                                             type="date"
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             onChange={(e) => setDateOfBirth(e.target.value)}
                                             value={dateOfBirth}
                                         />
@@ -441,7 +451,6 @@ export default function LawyerRegistrationForm() {
                                             type="password"
                                             placeholder='Password'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             minLength="6"
                                             onChange={(e) => setPassword(e.target.value)}
                                             value={password}
@@ -462,7 +471,6 @@ export default function LawyerRegistrationForm() {
                                             onChange={(e) => setSpeciality(e.target.value)}
                                             value={speciality}
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                         >
                                             <option value="Criminal Law">Criminal Law</option>
                                             <option value="Civil Law">Civil Law</option>
@@ -479,7 +487,6 @@ export default function LawyerRegistrationForm() {
                                             type="text"
                                             placeholder='e.g., LLB, LLM'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             value={degree}
                                             onChange={(e) => setDegree(e.target.value)}
                                         />
@@ -495,12 +502,13 @@ export default function LawyerRegistrationForm() {
                                         />
                                     </div>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>License Number</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            License Number <span className="text-red-500">*</span>
+                                        </p>
                                         <input
                                             type="text"
                                             placeholder='License Number'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            required
                                             onChange={(e) => setLicenseNumber(e.target.value)}
                                             value={licenseNumber}
                                         />
@@ -533,7 +541,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={professionalType}
                                             onChange={(e) => setProfessionalType(e.target.value)}
-                                            required
                                         >
                                             <option value="Attorney-at-Law">Attorney-at-Law</option>
                                             <option value="Advocate">Advocate</option>
@@ -550,7 +557,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={consultationFees}
                                             onChange={(e) => setConsultationFees(e.target.value)}
-                                            required
                                         />
                                     </div>
                                 </div>
@@ -564,14 +570,15 @@ export default function LawyerRegistrationForm() {
                                 <h3 className='text-lg font-semibold text-[#515151] mb-4'>Courts</h3>
                                 <div className='grid grid-cols-1 gap-3'>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>Primary Court</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            Primary Court <span className="text-red-500">*</span>
+                                        </p>
                                         <input
                                             type="text"
                                             placeholder='Primary Court'
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={primaryCourt}
                                             onChange={(e) => setPrimaryCourt(e.target.value)}
-                                            required
                                         />
                                     </div>
 
@@ -581,7 +588,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={method}
                                             onChange={(e) => setMethod(e.target.value)}
-                                            required
                                         >
                                             <option value="onsite">Onsite</option>
                                             <option value="online">Online</option>
@@ -607,12 +613,13 @@ export default function LawyerRegistrationForm() {
                                 <h3 className='text-lg font-semibold text-[#515151] mb-4'>Location Information</h3>
                                 <div className='grid grid-cols-1 gap-3'>
                                     <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>District</p>
+                                        <p className='text-[#515151] text-sm mb-1'>
+                                            District <span className="text-red-500">*</span>
+                                        </p>
                                         <select
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={district}
                                             onChange={(e) => setDistrict(e.target.value)}
-                                            required
                                         >
                                             <option value="Colombo">Colombo</option>
                                             <option value="Gampaha">Gampaha</option>
@@ -648,7 +655,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={address}
                                             onChange={(e) => setAddress(e.target.value)}
-                                            required
                                             rows="3"
                                         ></textarea>
                                     </div>
@@ -661,7 +667,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={latitude}
                                             onChange={(e) => setLatitude(e.target.value)}
-                                            required
                                         />
                                     </div>
                                     <div className='w-full'>
@@ -673,7 +678,6 @@ export default function LawyerRegistrationForm() {
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                             value={longitude}
                                             onChange={(e) => setLongitude(e.target.value)}
-                                            required
                                         />
                                     </div>
                                 </div>
