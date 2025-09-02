@@ -29,37 +29,52 @@ const lawyerList = async (req, res) => {
 };
 
 //API for lawyer Login
-
 const loginLawyer = async (req, res) => {
   try {
-    const { email, password } = req.body
-    const lawyer = await lawyerModel.findOne({ email })
+    const { email, password } = req.body;
 
-    if (!lawyer) {
-      return res.json({ success: false, message: 'Invalid Credentials' })
+    // Validate input
+    if (!email || !password) {
+      return res.json({ success: false, message: 'Email and password are required' });
     }
 
-    const isMatch = await bcrypt.compare(password, lawyer.password)
+    console.log('Login attempt for email:', email);
+    console.log('Password provided:', !!password);
+
+    const lawyer = await lawyerModel.findOne({ email });
+
+    if (!lawyer) {
+      console.log('No lawyer found with email:', email);
+      return res.json({ success: false, message: 'Invalid Credentials' });
+    }
+
+    console.log('Lawyer found:', lawyer.name);
+    console.log('Lawyer has password:', !!lawyer.password);
+
+    // Check if lawyer has a password (in case it's missing from database)
+    if (!lawyer.password) {
+      console.log('Lawyer account found but no password set');
+      return res.json({ success: false, message: 'Account not fully set up. Please contact admin.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, lawyer.password);
 
     if (isMatch) {
-
-      const token = jwt.sign({ id: lawyer._id }, process.env.JWT_SECRET)
-
-      res.json({ success: true, token })
-
+      const token = jwt.sign({ id: lawyer._id }, process.env.JWT_SECRET);
+      console.log('Login successful for:', lawyer.name);
+      res.json({ success: true, token });
     } else {
-      return res.json({ success: false, message: 'Invalid Credentials' })
-
+      console.log('Password mismatch for:', lawyer.name);
+      return res.json({ success: false, message: 'Invalid Credentials' });
     }
 
   } catch (error) {
-    console.log(error);
+    console.log('Login error:', error);
     res.json({ success: false, message: error.message });
   }
 }
 
 //API to get lawyer appointments for lawyer panel
-
 const appointmentsLawyer = async (req, res) => {
   try {
     const { lawyerId } = req.body
@@ -97,8 +112,6 @@ const appointmentComplete = async (req, res) => {
   }
 }
 
-
-
 // API to mark appointment cancel for lawyer panal
 const appointmentCancel = async (req, res) => {
   try {
@@ -126,7 +139,6 @@ const appointmentCancel = async (req, res) => {
 }
 
 //API to get dashboard data for lawyerpanel
-
 const lawyerDashboard = async (req, res) => {
   try {
 
@@ -166,7 +178,6 @@ const lawyerDashboard = async (req, res) => {
 }
 
 // API to get lawyer profile for lawyer panel
-
 const lawyerProfile = async (req, res) => {
   try {
 
@@ -181,9 +192,7 @@ const lawyerProfile = async (req, res) => {
   }
 }
 
-
 // API to update lawyer profile data from lawyer panel
-
 const updateLawyerProfile = async (req, res) => {
 
   try {
@@ -199,7 +208,6 @@ const updateLawyerProfile = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 }
-
 
 export {
   changeAvailability,
