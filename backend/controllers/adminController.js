@@ -310,7 +310,7 @@ const getLawyer = async (req, res) => {
   }
 };
 
-// API to update lawyer details
+// API to update lawyer details (now includes password updates)
 const updateLawyer = async (req, res) => {
   try {
     console.log("Request received at updateLawyer controller");
@@ -319,6 +319,7 @@ const updateLawyer = async (req, res) => {
     const {
       name,
       email,
+      password, // Added password field
       phone,
       office_phone,
       speciality,
@@ -361,6 +362,21 @@ const updateLawyer = async (req, res) => {
       }
     }
 
+    // Validate and hash new password if provided
+    let hashedPassword = existingLawyer.password; // Keep existing password by default
+    if (password && password.trim() !== '') {
+      if (password.length < 8) {
+        return res.json({
+          success: false,
+          message: "Password must be at least 8 characters long",
+        });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      hashedPassword = await bcrypt.hash(password, salt);
+      console.log("New password hashed for lawyer:", name);
+    }
+
     let imageUrl = existingLawyer.image; // Keep existing image by default
 
     // Upload new image if provided
@@ -389,6 +405,7 @@ const updateLawyer = async (req, res) => {
       name,
       email,
       image: imageUrl,
+      password: hashedPassword, // Now includes password updates
       phone,
       office_phone,
       speciality,
@@ -415,6 +432,65 @@ const updateLawyer = async (req, res) => {
     await lawyerModel.findByIdAndUpdate(lawyerId, updateData, { new: true });
 
     res.json({ success: true, message: "Lawyer updated successfully" });
+
+  } catch (error) {
+    console.log("Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// API to reset lawyer password (separate function for admin use)
+const resetLawyerPassword = async (req, res) => {
+  try {
+    const { lawyerId, newPassword } = req.body;
+
+    if (!lawyerId || !newPassword) {
+      return res.json({ success: false, message: "Lawyer ID and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.json({ success: false, message: "Password must be at least 8 characters long" });
+    }
+
+    // Check if lawyer exists
+    const lawyer = await lawyerModel.findById(lawyerId);
+    if (!lawyer) {
+      return res.json({ success: false, message: "Lawyer not found" });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update the lawyer's password
+    await lawyerModel.findByIdAndUpdate(lawyerId, { password: hashedPassword });
+
+    console.log(`Password reset for lawyer: ${lawyer.name} (${lawyer.email})`);
+    res.json({ success: true, message: "Password reset successfully" });
+
+  } catch (error) {
+    console.log("Error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// API to check if lawyer has password (for admin panel UI)
+const checkLawyerPassword = async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
+
+    const lawyer = await lawyerModel.findById(lawyerId).select('name email password');
+
+    if (!lawyer) {
+      return res.json({ success: false, message: "Lawyer not found" });
+    }
+
+    res.json({
+      success: true,
+      hasPassword: !!lawyer.password,
+      lawyerName: lawyer.name,
+      lawyerEmail: lawyer.email
+    });
 
   } catch (error) {
     console.log("Error:", error);
@@ -457,5 +533,7 @@ export {
   getApplications,
   getLawyer,
   updateLawyer,
-  deleteLawyer
+  deleteLawyer,
+  resetLawyerPassword,
+  checkLawyerPassword
 };
