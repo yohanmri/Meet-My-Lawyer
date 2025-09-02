@@ -11,12 +11,19 @@ const AllApointments = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     if (aToken) {
       getAllAppointments();
     }
   }, [aToken]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery, startDate, endDate]);
 
   const filteredAppointments = appointments.filter(item => {
     const matchesStatus =
@@ -33,6 +40,17 @@ const AllApointments = () => {
 
     return matchesStatus && matchesSearch && isAfterStart && isBeforeEnd;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentAppointments = filteredAppointments.slice(startIndex, startIndex + itemsPerPage);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div className='w-full max-w-6xl m-5'>
@@ -81,12 +99,12 @@ const AllApointments = () => {
           <p>Actions</p>
         </div>
 
-        {filteredAppointments.map((item, index) => (
+        {currentAppointments.map((item, index) => (
           <div
             className='flex flex-wrap justify-between max-sm:gap-2 sm:grid sm:grid-cols-[0.5fr_3fr_1fr_3fr_3fr_1fr_1fr] items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50'
             key={index}
           >
-            <p className='max-sm:hidden'>{index + 1}</p>
+            <p className='max-sm:hidden'>{startIndex + index + 1}</p>
             <div className='flex items-center gap-2'>
               <img className='w-8 h-8 rounded-full object-cover' src={item.userData.image} alt='' />
               <p>{item.userData.name}</p>
@@ -114,9 +132,29 @@ const AllApointments = () => {
               />
             )}
           </div>
-
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-4">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            className={`px-3 py-1 border rounded ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          <p className="text-sm">Page {currentPage} of {totalPages}</p>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            className={`px-3 py-1 border rounded ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

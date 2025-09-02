@@ -11,6 +11,8 @@ const MyAppointments = () => {
   const { backendUrl, token, getLawyersData } = useContext(AppContext)
 
   const [appointments, setAppointments] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 4
   const months = [" ", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
@@ -21,6 +23,16 @@ const MyAppointments = () => {
 
   const navigate = useNavigate()
 
+  // Pagination logic
+  const totalPages = Math.ceil(appointments.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const currentAppointments = appointments.slice(startIndex, startIndex + itemsPerPage)
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
+  }
 
   const getUserAppointments = async () => {
     try {
@@ -111,7 +123,7 @@ const MyAppointments = () => {
     <div>
       <p className="pb-3 mt-12 font-medium text-zinc-700 border-b">My appointments</p>
       <div>
-        {appointments.map((item, index) => (
+        {currentAppointments.map((item, index) => (
           <div className='grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-2 border-b' key={index}>
             <div>
               <img className="w-32 bg-indigo-50" src={item.lawyerData.image} alt="" />
@@ -158,6 +170,27 @@ const MyAppointments = () => {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-4">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            className={`px-3 py-1 border rounded ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
+          <p className="text-sm">Page {currentPage} of {totalPages}</p>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            className={`px-3 py-1 border rounded ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }
