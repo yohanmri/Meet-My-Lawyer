@@ -59,10 +59,7 @@ const Sidebar = () => {
                         <p className="hidden md:block">Dashboard</p>
                     </NavLink>
 
-                    <NavLink className={navItemClass} to="/gis-dashboard">
-                        <MdMap size={24} style={iconStyle} />
-                        <p className="hidden md:block">GIS Dashboard</p>
-                    </NavLink>
+
 
                     <NavLink className={navItemClass} to="/lawyer-appointments">
                         <MdEventNote size={24} style={iconStyle} />
