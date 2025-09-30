@@ -113,8 +113,8 @@ const addLawyer = async (req, res) => {
 
         const imageUpload = await cloudinary.uploader.upload(dataURI, {
           resource_type: "image",
-          folder: "lawyers", // Optional: organize images in folders
-          timeout: 60000, // 60 second timeout
+          folder: "lawyers",
+          timeout: 60000,
         });
 
         imageUrl = imageUpload.secure_url;
@@ -263,9 +263,9 @@ const appointmentCancel = async (req, res) => {
 // API to get dashboard data for admin panel
 const adminDashboard = async (req, res) => {
   try {
-    const lawyers = await lawyerModel.find({}) //can access all the lawyers here
-    const users = await userModel.find({}) //can access all the users
-    const appointments = await appointmentModel.find({}) //can access all appointments
+    const lawyers = await lawyerModel.find({})
+    const users = await userModel.find({})
+    const appointments = await appointmentModel.find({})
 
     const dashData = {
       lawyers: lawyers.length,
@@ -285,7 +285,7 @@ const adminDashboard = async (req, res) => {
 //API to get all the applications from the lawyers
 const getApplications = async (req, res) => {
   try {
-    const applications = await applicationModel.find().sort({ application_date: -1 }); // latest first
+    const applications = await applicationModel.find().sort({ application_date: -1 });
     res.json({ success: true, applications });
   } catch (error) {
     console.error("Error fetching applications:", error);
@@ -319,7 +319,7 @@ const updateLawyer = async (req, res) => {
     const {
       name,
       email,
-      password, // Added password field
+      password,
       phone,
       office_phone,
       speciality,
@@ -363,7 +363,7 @@ const updateLawyer = async (req, res) => {
     }
 
     // Validate and hash new password if provided
-    let hashedPassword = existingLawyer.password; // Keep existing password by default
+    let hashedPassword = existingLawyer.password;
     if (password && password.trim() !== '') {
       if (password.length < 8) {
         return res.json({
@@ -377,7 +377,7 @@ const updateLawyer = async (req, res) => {
       console.log("New password hashed for lawyer:", name);
     }
 
-    let imageUrl = existingLawyer.image; // Keep existing image by default
+    let imageUrl = existingLawyer.image;
 
     // Upload new image if provided
     if (imageFile) {
@@ -405,7 +405,7 @@ const updateLawyer = async (req, res) => {
       name,
       email,
       image: imageUrl,
-      password: hashedPassword, // Now includes password updates
+      password: hashedPassword,
       phone,
       office_phone,
       speciality,
@@ -512,14 +512,179 @@ const deleteLawyer = async (req, res) => {
     // Delete the lawyer
     await lawyerModel.findByIdAndDelete(lawyerId);
 
-    // Optional: You might want to handle related appointments here
-    // await appointmentModel.deleteMany({ lawyerId });
-
     res.json({ success: true, message: "Lawyer deleted successfully" });
 
   } catch (error) {
     console.log("Error:", error);
     res.json({ success: false, message: error.message });
+  }
+};
+
+// API to approve application and create lawyer account
+const approveApplication = async (req, res) => {
+  try {
+    console.log("Approve application called with body:", req.body);
+    const { applicationId } = req.body;
+    
+    if (!applicationId) {
+      return res.json({ 
+        success: false, 
+        message: "Application ID is required" 
+      });
+    }
+    
+    // Find the application
+    const application = await applicationModel.findById(applicationId);
+    console.log("Found application:", application ? "Yes" : "No");
+    
+    if (!application) {
+      return res.json({ 
+        success: false, 
+        message: "Application not found" 
+      });
+    }
+
+    // Check if lawyer with this email or license number already exists
+    const existingLawyer = await lawyerModel.findOne({
+      $or: [
+        { email: application.application_email },
+        { license_number: application.application_license_number }
+      ]
+    });
+
+    if (existingLawyer) {
+      return res.json({
+        success: false,
+        message: "A lawyer with this email or license number already exists"
+      });
+    }
+
+    // Check if application has a password
+    if (!application.application_password || application.application_password.trim() === '') {
+      return res.json({
+        success: false,
+        message: "Application does not contain a password. Please ensure the applicant has set a password."
+      });
+    }
+
+    // Validate password length
+    if (application.application_password.length < 8) {
+      return res.json({
+        success: false,
+        message: "Application password must be at least 8 characters long"
+      });
+    }
+
+    console.log("Using password from application for:", application.application_email);
+    
+    // Hash the password from the application
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(application.application_password, salt);
+
+    // Create lawyer data from application
+    const lawyerData = {
+      name: application.application_name,
+      email: application.application_email,
+      password: hashedPassword,
+      phone: application.application_phone,
+      office_phone: application.application_office_phone || "",
+      image: application.application_image || "",
+      speciality: application.application_speciality,
+      gender: application.application_gender,
+      dob: application.application_dob || "Not Selected",
+      degree: application.application_degree || [],
+      district: application.application_district,
+      license_number: application.application_license_number,
+      bar_association: application.application_bar_association,
+      experience: application.application_experience,
+      languages_spoken: application.application_languages_spoken || [],
+      about: application.application_about || "Professional lawyer",
+      available: true,
+      legal_professionals: application.application_legal_professionals || [],
+      fees: application.application_fees || 1000,
+      total_reviews: 0,
+      address: application.application_address || { street: "", district: application.application_district },
+      latitude: application.application_latitude || 0,
+      longitude: application.application_longitude || 0,
+      court1: application.application_court1,
+      court2: application.application_court2 || "",
+      date: Date.now(),
+      slots_booked: {},
+      method: "both",
+      online_link: ""
+    };
+
+    console.log("Creating lawyer with data:", { name: lawyerData.name, email: lawyerData.email });
+
+    // Create new lawyer account
+    const newLawyer = new lawyerModel(lawyerData);
+    await newLawyer.save();
+    
+    console.log("Lawyer created successfully with ID:", newLawyer._id);
+
+    // Delete the application after successful approval
+    await applicationModel.findByIdAndDelete(applicationId);
+    console.log("Application deleted");
+
+    res.json({ 
+      success: true, 
+      message: "Application approved successfully. Lawyer account created with their registered password.",
+      lawyerId: newLawyer._id
+    });
+
+  } catch (error) {
+    console.error("Error approving application:", error);
+    res.json({ 
+      success: false, 
+      message: error.message || "Failed to approve application"
+    });
+  }
+};
+
+// API to reject application
+const rejectApplication = async (req, res) => {
+  try {
+    console.log("Reject application called with body:", req.body);
+    const { applicationId } = req.body;
+    
+    if (!applicationId) {
+      return res.json({ 
+        success: false, 
+        message: "Application ID is required" 
+      });
+    }
+    
+    // Find the application first to get email for notification
+    const application = await applicationModel.findById(applicationId);
+    
+    if (!application) {
+      return res.json({ 
+        success: false, 
+        message: "Application not found" 
+      });
+    }
+
+    // Delete the application
+    await applicationModel.findByIdAndDelete(applicationId);
+    console.log(`Application rejected and deleted for: ${application.application_email}`);
+
+    console.log("=================================");
+    console.log("APPLICATION REJECTED");
+    console.log("Applicant:", application.application_name);
+    console.log("Email:", application.application_email);
+    console.log("=================================");
+
+    res.json({ 
+      success: true, 
+      message: "Application rejected and removed from the system." 
+    });
+
+  } catch (error) {
+    console.error("Error rejecting application:", error);
+    res.json({ 
+      success: false, 
+      message: error.message || "Failed to reject application"
+    });
   }
 };
 
@@ -535,5 +700,7 @@ export {
   updateLawyer,
   deleteLawyer,
   resetLawyerPassword,
-  checkLawyerPassword
+  checkLawyerPassword,
+  approveApplication,
+  rejectApplication
 };

@@ -1,17 +1,14 @@
-import {
-    addApplication
-} from "../controllers/applicationController.js"
 import express from "express";
+import { addApplication } from "../controllers/applicationController.js";
+import applicationModel from "../models/applicationModel.js";
+import authAdmin from "../middlewares/authAdmin.js"; // Your admin auth middleware
 import upload from "../middlewares/multer.js";
-import { getApplications } from "../controllers/adminController.js";
-import authAdmin from "../middlewares/authAdmin.js";
 
 const applicationRouter = express.Router();
 
-console.log("Application router loaded");
-
-// Public route - no auth needed for lawyer applications
-applicationRouter.post("/add-application",
+// Route for submitting application with file uploads
+applicationRouter.post(
+    "/add-application",
     upload.fields([
         { name: 'application_image', maxCount: 1 },
         { name: 'application_license_certificate', maxCount: 1 },
@@ -21,7 +18,23 @@ applicationRouter.post("/add-application",
     addApplication
 );
 
-// Admin-only route - requires authentication
-applicationRouter.get('/get-applications', authAdmin, getApplications);
+// Route for getting all applications (for admin)
+applicationRouter.get("/get-applications", authAdmin, async (req, res) => {
+    try {
+        const applications = await applicationModel.find({}).sort({ application_date: -1 });
+        
+        res.json({
+            success: true,
+            applications,
+            message: "Applications retrieved successfully"
+        });
+    } catch (error) {
+        console.error("Error fetching applications:", error);
+        res.json({
+            success: false,
+            message: error.message
+        });
+    }
+});
 
 export default applicationRouter;

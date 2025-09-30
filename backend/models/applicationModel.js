@@ -11,6 +11,11 @@ const applicationSchema = new mongoose.Schema({
         required: [true, "Email is required"],
         trim: true
     },
+
+    application_password: {
+    type: String,
+    required: true
+    },
     application_phone: {
         type: String,
         required: [true, "Phone number is required"],

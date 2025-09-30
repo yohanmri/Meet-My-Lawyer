@@ -9,6 +9,7 @@ const RegisterLawyer = () => {
     const [formData, setFormData] = useState({
         application_name: '',
         application_email: '',
+        application_password: '',
         application_phone: '',
         application_office_phone: '',
         application_speciality: '',
@@ -92,6 +93,7 @@ const RegisterLawyer = () => {
         const requiredFields = [
             'application_name',
             'application_email',
+            'application_password',
             'application_phone',
             'application_speciality',
             'application_gender',
@@ -107,6 +109,11 @@ const RegisterLawyer = () => {
                 toast.error(`Please fill in ${field.replace('application_', '').replace('_', ' ')}`);
                 return false;
             }
+        }
+
+        if (!formData.application_password || formData.application_password.length < 8) {
+            toast.error('Password must be at least 8 characters');
+            return false;
         }
 
         if (formData.application_languages_spoken.length === 0) {
@@ -248,6 +255,18 @@ const RegisterLawyer = () => {
                         onChange={(e) => handleInputChange('application_email', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         placeholder="your.email@example.com"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                    <input
+                        type="password"
+                        value={formData.application_password}
+                        onChange={(e) => handleInputChange('application_password', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        placeholder="Enter your password (min 8 characters)"
                         required
                     />
                 </div>
@@ -594,6 +613,7 @@ const RegisterLawyer = () => {
             // Add text fields
             submitData.append('application_name', formData.application_name);
             submitData.append('application_email', formData.application_email);
+            submitData.append('application_password', formData.application_password);
             submitData.append('application_phone', formData.application_phone);
             submitData.append('application_office_phone', formData.application_office_phone);
             submitData.append('application_speciality', formData.application_speciality);
@@ -650,6 +670,7 @@ const RegisterLawyer = () => {
                 setFormData({
                     application_name: '',
                     application_email: '',
+                    application_password: '',
                     application_phone: '',
                     application_office_phone: '',
                     application_speciality: '',

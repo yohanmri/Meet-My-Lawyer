@@ -128,13 +128,17 @@ const bookAppointment = async (req, res) => {
   try {
     const { userId, lawyerId, slotDate, slotTime } = req.body
 
-    const lawyerData = await lawyerModel.findById(lawyerId).select('-password')
+const lawyerData = await lawyerModel.findById(lawyerId).select('-password')
 
-    if (!lawyerData.available) {
-      return res.json({ success: false, message: 'Lawyer not available' })
+// Check if lawyer exists first
+if (!lawyerData) {
+  return res.json({ success: false, message: 'Lawyer not found' })
+}
 
-    }
-
+// Then check availability
+if (!lawyerData.available) {
+  return res.json({ success: false, message: 'Lawyer not available' })
+}
     let slots_booked = lawyerData.slots_booked
 
     // Checking for slots availability

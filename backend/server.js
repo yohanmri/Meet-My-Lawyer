@@ -8,10 +8,24 @@ import lawyerRouter from "./routes/lawyerRoute.js";
 import userRouter from "./routes/userRoute.js";
 import applicationRouter from "./routes/applicationRoute.js";
 import mongoose from "mongoose";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // app config
 const app = express();
 const port = process.env.PORT || 4000;
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('✅ Created uploads directory');
+}
 
 // Connect to database and fix old indexes
 const initializeApp = async () => {
@@ -67,6 +81,9 @@ initializeApp();
 // middlewares
 app.use(express.json());
 app.use(cors());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(uploadsDir));
 
 // Add debugging middleware
 app.use("/api/admin", function (req, res, next) {

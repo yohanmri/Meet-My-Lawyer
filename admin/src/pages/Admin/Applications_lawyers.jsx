@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AdminContext } from '../../context/AdminContext';
 import { MdCheckCircle, MdCancel, MdVisibility } from 'react-icons/md';
+import { FaFileAlt, FaImage, FaFilePdf, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -60,6 +61,15 @@ const Applications_lawyers = () => {
         setActionApplication(app);
         setActionType(action);
         setShowConfirmModal(true);
+    };
+
+    // Helper function to open document in new tab
+    const viewDocument = (url, documentName) => {
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            toast.error(`${documentName} not available`);
+        }
     };
 
     // Process approve/reject action
@@ -325,20 +335,96 @@ const Applications_lawyers = () => {
                                     <h3 className="font-semibold text-lg border-b pb-2">Location & Courts</h3>
                                     <div className="space-y-2 text-sm">
                                         <div><strong>District:</strong> {selectedApplication.application_district}</div>
-                                        <div><strong>Address:</strong> {selectedApplication.application_address?.street || 'Not provided'}</div>
+                                        <div><strong>Address:</strong> {typeof selectedApplication.application_address === 'object' 
+                                            ? selectedApplication.application_address?.street 
+                                            : selectedApplication.application_address || 'Not provided'}</div>
                                         <div><strong>Primary Court:</strong> {selectedApplication.application_court1}</div>
                                         <div><strong>Secondary Court:</strong> {selectedApplication.application_court2 || 'Not provided'}</div>
                                     </div>
                                 </div>
 
-                                {/* Documents */}
+                                {/* Documents with View Icons */}
                                 <div className="space-y-4">
                                     <h3 className="font-semibold text-lg border-b pb-2">Documents</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div><strong>Profile Image:</strong> {selectedApplication.application_image ? '✓ Uploaded' : '✗ Not uploaded'}</div>
-                                        <div><strong>License Certificate:</strong> {selectedApplication.application_license_certificate?.originalUrl ? '✓ Uploaded' : '✗ Not uploaded'}</div>
-                                        <div><strong>Birth Certificate:</strong> {selectedApplication.application_birth_certificate?.originalUrl ? '✓ Uploaded' : '✗ Not uploaded'}</div>
-                                        <div><strong>Professional Certificates:</strong> {selectedApplication.application_legal_professionals_certificate?.length > 0 ? `✓ ${selectedApplication.application_legal_professionals_certificate.length} file(s)` : '✗ Not uploaded'}</div>
+                                    <div className="space-y-3">
+                                        {/* Profile Image */}
+                                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                            <div className="flex items-center gap-2">
+                                                <FaImage className="text-blue-500" />
+                                                <span className="text-sm">Profile Image</span>
+                                            </div>
+                                            {selectedApplication.application_image ? (
+                                                <button
+                                                    onClick={() => viewDocument(selectedApplication.application_image, 'Profile Image')}
+                                                    className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                                >
+                                                    <FaEye /> View
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-gray-500">Not uploaded</span>
+                                            )}
+                                        </div>
+
+                                        {/* License Certificate */}
+                                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                            <div className="flex items-center gap-2">
+                                                <FaFilePdf className="text-red-500" />
+                                                <span className="text-sm">License Certificate</span>
+                                            </div>
+                                            {selectedApplication.application_license_certificate?.originalUrl ? (
+                                                <button
+                                                    onClick={() => viewDocument(selectedApplication.application_license_certificate.originalUrl, 'License Certificate')}
+                                                    className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                                >
+                                                    <FaEye /> View PDF
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-gray-500">Not uploaded</span>
+                                            )}
+                                        </div>
+
+                                        {/* Birth Certificate */}
+                                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                            <div className="flex items-center gap-2">
+                                                <FaFilePdf className="text-red-500" />
+                                                <span className="text-sm">Birth Certificate</span>
+                                            </div>
+                                            {selectedApplication.application_birth_certificate?.originalUrl ? (
+                                                <button
+                                                    onClick={() => viewDocument(selectedApplication.application_birth_certificate.originalUrl, 'Birth Certificate')}
+                                                    className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                                >
+                                                    <FaEye /> View PDF
+                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-gray-500">Not uploaded</span>
+                                            )}
+                                        </div>
+
+                                        {/* Professional Certificates */}
+                                        <div className="p-2 bg-gray-50 rounded">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <FaFileAlt className="text-green-500" />
+                                                <span className="text-sm">Professional Certificates</span>
+                                            </div>
+                                            {selectedApplication.application_legal_professionals_certificate?.length > 0 ? (
+                                                <div className="space-y-1 ml-6">
+                                                    {selectedApplication.application_legal_professionals_certificate.map((cert, index) => (
+                                                        <div key={index} className="flex justify-between items-center">
+                                                            <span className="text-xs text-gray-600">Certificate {index + 1}</span>
+                                                            <button
+                                                                onClick={() => viewDocument(cert.originalUrl || cert, `Professional Certificate ${index + 1}`)}
+                                                                className="flex items-center gap-1 px-2 py-0.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                                                            >
+                                                                <FaEye /> View
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-500 ml-6">Not uploaded</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -349,6 +435,24 @@ const Applications_lawyers = () => {
                                     className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
                                 >
                                     Close
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowViewModal(false);
+                                        handleAction(selectedApplication, 'approve');
+                                    }}
+                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                    Approve Application
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowViewModal(false);
+                                        handleAction(selectedApplication, 'reject');
+                                    }}
+                                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                >
+                                    Reject Application
                                 </button>
                             </div>
                         </div>
