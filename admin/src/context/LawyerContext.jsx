@@ -3,7 +3,6 @@ import { createContext } from "react";
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
-
 export const LawyerContext = createContext()
 
 const LawyerContextProvider = (props) => {
@@ -16,7 +15,7 @@ const LawyerContextProvider = (props) => {
 
     const [dashData, setDashData] = useState(false)
 
-    const [profileData, setProfileData] = useState(false)
+    const [profileData, setProfileData] = useState(null)
 
     const getAppointments = async () => {
         try {
@@ -33,10 +32,7 @@ const LawyerContextProvider = (props) => {
         }
     }
 
-    //Function to mark the appointment completed
-
     const completeAppointment = async (appointmentId) => {
-
         try {
             const { data } = await axios.post(backendUrl + '/api/lawyer/complete-appointment', { appointmentId }, { headers: { dToken } })
             if (data.success) {
@@ -45,19 +41,13 @@ const LawyerContextProvider = (props) => {
             } else {
                 toast.error(data.message)
             }
-
-
         } catch (error) {
             console.log(error);
             toast.error(error.message)
         }
     }
 
-
-    //Function to mark the appointment cancel
-
     const cancelAppointment = async (appointmentId) => {
-
         try {
             const { data } = await axios.post(backendUrl + '/api/lawyer/cancel-appointment', { appointmentId }, { headers: { dToken } })
             if (data.success) {
@@ -66,8 +56,6 @@ const LawyerContextProvider = (props) => {
             } else {
                 toast.error(data.message)
             }
-
-
         } catch (error) {
             console.log(error);
             toast.error(error.message)
@@ -76,7 +64,6 @@ const LawyerContextProvider = (props) => {
 
     const getDashData = async () => {
         try {
-
             const { data } = await axios.get(backendUrl + '/api/lawyer/dashboard', { headers: { dToken } })
             if (data.success) {
                 setDashData(data.dashData)
@@ -84,7 +71,6 @@ const LawyerContextProvider = (props) => {
             } else {
                 toast.error(data.message)
             }
-
         } catch (error) {
             console.log(error);
             toast.error(error.message)
@@ -93,18 +79,15 @@ const LawyerContextProvider = (props) => {
 
     const getProfileData = async () => {
         try {
-
             const { data } = await axios.get(backendUrl + '/api/lawyer/profile', { headers: { dToken } })
 
             if (data.success) {
                 setProfileData(data.profileData)
                 console.log(data.profileData);
             }
-
         } catch (error) {
             console.log(error);
             toast.error(error.message)
-
         }
     }
 
@@ -118,6 +101,7 @@ const LawyerContextProvider = (props) => {
         profileData, setProfileData,
         getProfileData,
     }
+    
     return (
         <LawyerContext.Provider value={value}>
             {props.children}

@@ -92,6 +92,7 @@ const addApplication = async (req, res) => {
         const {
             application_name,
             application_email,
+            application_password,
             application_phone,
             application_office_phone,
             application_speciality,
@@ -187,6 +188,8 @@ const addApplication = async (req, res) => {
         const applicationData = {
             application_name,
             application_email,
+            application_password,
+            
             application_phone,
             application_office_phone: application_office_phone || "",
             application_speciality,
