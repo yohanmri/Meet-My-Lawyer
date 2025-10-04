@@ -6,8 +6,11 @@ import {
   appointmentCancel,
   appointmentsAdmin,
   loginAdmin,
-  approveApplication,  // ADD THIS IMPORT
-  rejectApplication    // ADD THIS IMPORT
+  approveApplication,  
+  rejectApplication,    
+  deleteLawyer,  
+  updateLawyer,
+  getLawyer
 } from "../controllers/adminController.js";
 import upload from "../middlewares/multer.js";
 import authAdmin from "../middlewares/authAdmin.js";
@@ -37,5 +40,10 @@ adminRouter.get('/dashboard', authAdmin, adminDashboard);
 // TWO ROUTES FOR APPLICATION APPROVAL/REJECTION
 adminRouter.post("/approve-application", authAdmin, approveApplication);
 adminRouter.post("/reject-application", authAdmin, rejectApplication);
+
+
+adminRouter.get("/lawyer/:lawyerId", authAdmin, getLawyer);
+adminRouter.put("/lawyer/:lawyerId", authAdmin, upload.single("image"), updateLawyer);
+adminRouter.delete("/lawyer/:lawyerId", authAdmin, deleteLawyer);
 
 export default adminRouter;

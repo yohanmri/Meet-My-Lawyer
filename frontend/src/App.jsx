@@ -15,7 +15,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 const App = () => {
   return (
-    <div className='mx-4 sm:mx-[10%]'>
+    <div className='mx-4 sm:mx-[8%]'>
       <ToastContainer />
       <Navbar />
       <Routes>

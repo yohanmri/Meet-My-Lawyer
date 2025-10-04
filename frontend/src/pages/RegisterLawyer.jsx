@@ -711,8 +711,8 @@ const RegisterLawyer = () => {
     return (
         <div className='mt-8'>
             <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <div
+            <div className="bg-[#e6e6ef] rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                        <div
                         style={{ background: 'linear-gradient(to right, #D00C1F, #6A0610)' }}
                         className=" px-4 py-2">
                         <h1 className="text-2xl font-bold text-white">Lawyer Registration</h1>

@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModel.js";
 import applicationModel from "../models/applicationModel.js";
+import { sendApprovalEmail, sendRejectionEmail } from '../config/simpleEmail.js';
+
 
 // API for adding lawyer
 const addLawyer = async (req, res) => {
@@ -213,7 +215,8 @@ const loginAdmin = async (req, res) => {
 //API to get all lawyers list for admin panel
 const allLawyers = async (req, res) => {
   try {
-    const lawyers = await lawyerModel.find({}).select("-password");
+    //.sort() to show newest first
+    const lawyers = await lawyerModel.find({}).select("-password").sort({ date: -1 });
     res.json({ success: true, lawyers });
   } catch (error) {
     console.log("Error:", error);
@@ -533,7 +536,6 @@ const approveApplication = async (req, res) => {
       });
     }
     
-    // Find the application
     const application = await applicationModel.findById(applicationId);
     console.log("Found application:", application ? "Yes" : "No");
     
@@ -544,7 +546,6 @@ const approveApplication = async (req, res) => {
       });
     }
 
-    // Check if lawyer with this email or license number already exists
     const existingLawyer = await lawyerModel.findOne({
       $or: [
         { email: application.application_email },
@@ -559,7 +560,6 @@ const approveApplication = async (req, res) => {
       });
     }
 
-    // Check if application has a password
     if (!application.application_password || application.application_password.trim() === '') {
       return res.json({
         success: false,
@@ -567,7 +567,6 @@ const approveApplication = async (req, res) => {
       });
     }
 
-    // Validate password length
     if (application.application_password.length < 8) {
       return res.json({
         success: false,
@@ -575,13 +574,14 @@ const approveApplication = async (req, res) => {
       });
     }
 
+    // Store the plain password before hashing for email
+    const plainPassword = application.application_password;
+    
     console.log("Using password from application for:", application.application_email);
     
-    // Hash the password from the application
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(application.application_password, salt);
 
-    // Create lawyer data from application
     const lawyerData = {
       name: application.application_name,
       email: application.application_email,
@@ -616,20 +616,32 @@ const approveApplication = async (req, res) => {
 
     console.log("Creating lawyer with data:", { name: lawyerData.name, email: lawyerData.email });
 
-    // Create new lawyer account
     const newLawyer = new lawyerModel(lawyerData);
     await newLawyer.save();
     
     console.log("Lawyer created successfully with ID:", newLawyer._id);
 
-    // Delete the application after successful approval
+// Approve
+const emailSent = await sendApprovalEmail(
+    application.application_email,
+    application.application_name,
+    plainPassword
+);
+
+    if (!emailSent) {
+      console.log("Warning: Welcome email could not be sent, but lawyer account was created");
+    }
+
     await applicationModel.findByIdAndDelete(applicationId);
     console.log("Application deleted");
 
     res.json({ 
       success: true, 
-      message: "Application approved successfully. Lawyer account created with their registered password.",
-      lawyerId: newLawyer._id
+      message: emailSent 
+        ? "Application approved successfully. Lawyer account created and welcome email sent."
+        : "Application approved successfully. Lawyer account created (email sending failed).",
+      lawyerId: newLawyer._id,
+      emailSent: emailSent
     });
 
   } catch (error) {
@@ -663,6 +675,12 @@ const rejectApplication = async (req, res) => {
         message: "Application not found" 
       });
     }
+
+    // Call the rejection email function (if you create it)
+    await sendRejectionEmail(
+      application.application_email,
+      application.application_name
+    );
 
     // Delete the application
     await applicationModel.findByIdAndDelete(applicationId);

@@ -189,12 +189,13 @@ const lawyerProfile = async (req, res) => {
   }
 };
 
+
+
 // API to update lawyer profile data from lawyer panel
 const updateLawyerProfile = async (req, res) => {
   try {
     // Get lawyerId from body (set by middleware)
-    // Note: When using multer with FormData, the lawyerId from middleware might be overwritten
-    // So we need to extract it carefully
+ 
     let lawyerId;
     
     // Check if lawyerId exists in body (from middleware)

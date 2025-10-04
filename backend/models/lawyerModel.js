@@ -4,7 +4,7 @@ const lawyerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, // ADD THIS LINE
+    password: { type: String, required: true }, 
     phone: { type: String, required: true },
     office_phone: { type: String, required: false },
     image: { type: String, required: false, default: "" },

@@ -24,10 +24,10 @@ const uploadToCloudinary = async (fileBuffer, fileName, resourceType = 'auto') =
             public_id: `lawyer_applications/${Date.now()}_${fileName.split('.')[0]}`,
             folder: 'lawyer_applications',
             invalidate: true,
-            // For PDFs, add options to make them viewable
+            // For now only pdf's are working
             ...(finalResourceType === 'raw' && fileExtension === 'pdf' && {
                 type: 'upload',
-                // Set proper content type for PDFs
+                // content type for PDFs
                 context: {
                     content_type: 'application/pdf'
                 },

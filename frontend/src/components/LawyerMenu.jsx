@@ -77,22 +77,23 @@ const LawyerMenu = () => {
                             src={assets.appointment_img}
                             alt="Legal registration"
                         />
-                        {/* Button positioned much more to the right */}
-                        <button
-                            onClick={() => {
-                                navigate('/login');
-                                scrollTo(0, 0);
-                            }}
-                            className="absolute bg-white text-sm sm:text-base text-[#6A0610] px-6 py-3 rounded-full font-medium z-10 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 flex items-center gap-2 hover:scale-125"
-                            style={{
-                                top: '15%', // Positioned above the finger
-                                left: '25%', // Moved significantly more to the right
-                                transform: 'translate(0, -50%)',
-                            }}
-                        >
-                            <LogIn size={18} />
-                            Login As a Lawyer
-                        </button>
+                       
+<button
+    onClick={() => {
+        window.open('http://localhost:5174/', '_blank');
+        scrollTo(0, 0);
+    }}
+    className="absolute bg-white text-sm sm:text-base text-[#6A0610] px-6 py-3 rounded-full font-medium z-10 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95 flex items-center gap-2 hover:scale-125"
+    style={{
+        top: '15%',
+        left: '25%',
+        transform: 'translate(0, -50%)',
+    }}
+>
+    <LogIn size={18} />
+    Login As a Lawyer
+</button>
+
                     </div>
                 </div>
             </div>
