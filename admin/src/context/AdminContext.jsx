@@ -23,7 +23,6 @@ const AdminContextProvider = (props) => {
             if (data.success) {
                 setLawyers(data.lawyers)
                 console.log(data.lawyers)
-                // Removed the recursive call that was causing infinite loop
             } else {
                 toast.error(data.message)
             }
@@ -71,11 +70,9 @@ const AdminContextProvider = (props) => {
             if (data.success) {
                 console.log('🎉 SUCCESS! About to show toast with message:', data.message);
 
-                // Try different toast methods
                 toast.success(data.message);
                 console.log('📝 toast.success() called');
 
-                // Also try without message to see if message is the issue
                 toast.success('Availability changed successfully!');
                 console.log('📝 backup toast.success() called');
 
@@ -113,10 +110,8 @@ const AdminContextProvider = (props) => {
         }
     }
 
-    // FIND this function and REPLACE it:
     const getAllApplications = async () => {
         try {
-            // FIX: Remove the empty {} parameter
             const { data } = await axios.get(backendUrl + '/api/application/get-applications', { headers: { aToken } });
 
             if (data.success) {
@@ -162,6 +157,29 @@ const AdminContextProvider = (props) => {
         }
     }
 
+    // ADD THIS FUNCTION HERE - INSIDE THE COMPONENT
+    const sendEmailToLawyers = async (recipientEmails, subject, message) => {
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/admin/send-email-to-lawyers',
+                { recipientEmails, subject, message },
+                { headers: { aToken } }
+            );
+
+            if (data.success) {
+                toast.success(data.message);
+                return true;
+            } else {
+                toast.error(data.message);
+                return false;
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to send emails");
+            console.error("Send email error:", error);
+            return false;
+        }
+    };
+
     const value = {
         aToken, setAToken,
         backendUrl, lawyers,
@@ -172,7 +190,8 @@ const AdminContextProvider = (props) => {
         dashData, getDashData,
         getAllRegisterRequests,
         getAllApplications,
-        applications, setApplications  // ← FIXED: Added these missing context values
+        applications, setApplications,
+        sendEmailToLawyers
     }
 
     return (

@@ -107,8 +107,11 @@ const updateProfile = async (req, res) => {
     });
 
     if (imageFile) {
-      // upload image to cloudinary
-      const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
+      // Upload image buffer to cloudinary (for memoryStorage)
+      const b64 = Buffer.from(imageFile.buffer).toString("base64");
+      const dataURI = `data:${imageFile.mimetype};base64,${b64}`;
+      
+      const imageUpload = await cloudinary.uploader.upload(dataURI, {
         resource_type: "image",
       });
       const imageURL = imageUpload.secure_url;
@@ -122,7 +125,6 @@ const updateProfile = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-
 //API to book appointment
 
 const bookAppointment = async (req, res) => {

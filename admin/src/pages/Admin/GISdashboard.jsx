@@ -1,819 +1,608 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import { Building, Info, Map, Eye, EyeOff, MapPin, User, Navigation, BarChart3, Users, Gavel, TrendingUp, Clock, Star, Calendar, Phone, Mail, Filter, Search, Activity, Target, Award, BookOpen } from 'lucide-react';
-import { AdminContext } from '../../context/AdminContext';
+import React, { useEffect, useRef, useState } from 'react';
+import { MapPin, Loader2, AlertCircle, Filter, Users, Scale, TrendingUp, Award, MapPinned, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
-const GISdashboard = () => {
-    const { lawyers, users } = useContext(AdminContext);
+const GISDashboard = () => {
+  const mapRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [features, setFeatures] = useState([]);
+  const [lawyers, setLawyers] = useState([]);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [selectedLawyer, setSelectedLawyer] = useState(null);
+  const [mapBounds, setMapBounds] = useState(null);
+  const [showLawyers, setShowLawyers] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [filters, setFilters] = useState({
+    province: '',
+    district: '',
+    dsd: ''
+  });
 
-    const mapRef = useRef(null);
-    const [activeTab, setActiveTab] = useState('lawyers');
-    const [map, setMap] = useState(null);
-    const [featureLayer, setFeatureLayer] = useState(null);
-    const [provincialLayer, setProvincialLayer] = useState(null);
-    const [districtLayer, setDistrictLayer] = useState(null);
-    const [courtsLayer, setCourtsLayer] = useState(null);
-    const [lawyersLayer, setLawyersLayer] = useState(null);
-    const [mapError, setMapError] = useState(false);
-    const [isMapLoading, setIsMapLoading] = useState(true);
-    const [selectedLayer, setSelectedLayer] = useState('dsd');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedSpecialty, setSelectedSpecialty] = useState('');
-    const [selectedLawyers, setSelectedLawyers] = useState([]);
-    const [userLocation, setUserLocation] = useState(null);
-    const [labelMarkers, setLabelMarkers] = useState([]);
-    const [labelsVisible, setLabelsVisible] = useState(true);
-    const [lawyersVisible, setLawyersVisible] = useState(true);
-    const [boundariesVisible, setBoundariesVisible] = useState(true);
+  const lawyersPerPage = 5;
 
-    // Get unique specialties from lawyers data
-    const specialties = lawyers ? [...new Set(lawyers.map(lawyer => lawyer.speciality))].filter(Boolean) : [];
+  const provinceColors = {
+    'Western': { base: '#3b82f6', shades: ['#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8'] },
+    'Central': { base: '#8b5cf6', shades: ['#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9'] },
+    'Southern': { base: '#ec4899', shades: ['#f472b6', '#ec4899', '#db2777', '#be185d'] },
+    'Northern': { base: '#f97316', shades: ['#fb923c', '#f97316', '#ea580c', '#c2410c'] },
+    'Eastern': { base: '#14b8a6', shades: ['#2dd4bf', '#14b8a6', '#0d9488', '#0f766e'] },
+    'North Western': { base: '#eab308', shades: ['#facc15', '#eab308', '#ca8a04', '#a16207'] },
+    'North Central': { base: '#84cc16', shades: ['#a3e635', '#84cc16', '#65a30d', '#4d7c0f'] },
+    'Uva': { base: '#06b6d4', shades: ['#22d3ee', '#06b6d4', '#0891b2', '#0e7490'] },
+    'Sabaragamuwa': { base: '#10b981', shades: ['#34d399', '#10b981', '#059669', '#047857'] }
+  };
 
-    // Get district statistics
-    const getDistrictStats = () => {
-        if (!lawyers) return {};
-
-        const districtStats = {};
-        lawyers.forEach(lawyer => {
-            if (lawyer.district) {
-                if (!districtStats[lawyer.district]) {
-                    districtStats[lawyer.district] = {
-                        total: 0,
-                        available: 0,
-                        specialties: new Set()
-                    };
-                }
-                districtStats[lawyer.district].total++;
-                if (lawyer.available) districtStats[lawyer.district].available++;
-                districtStats[lawyer.district].specialties.add(lawyer.speciality);
-            }
-        });
-
-        // Convert Set to number for display
-        Object.keys(districtStats).forEach(district => {
-            districtStats[district].specialtiesCount = districtStats[district].specialties.size;
-        });
-
-        return districtStats;
-    };
-
-    const districtStats = getDistrictStats();
-
-    // Filter lawyers based on search and specialty
-    const filteredLawyers = lawyers ? lawyers.filter(lawyer => {
-        const matchesSearch = !searchQuery ||
-            (lawyer.name && lawyer.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (lawyer.district && lawyer.district.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesSpecialty = !selectedSpecialty || lawyer.speciality === selectedSpecialty;
-        return matchesSearch && matchesSpecialty;
-    }) : [];
-
-    // Court data
-    const courtsData = [
-        {
-            id: 1,
-            name: 'Supreme Court',
-            type: 'Supreme Court',
-            location: 'Hulftsdorp, Colombo',
-            coordinates: [79.86102, 6.93542],
-            address: 'Supreme Court Complex, Hulftsdorp, Colombo 12',
-            phone: '+94 11 2323456',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'The highest court in Sri Lanka, handling constitutional matters and final appeals.'
-        },
-        {
-            id: 2,
-            name: 'Court of Appeal',
-            type: 'Court of Appeal',
-            location: 'Hulftsdorp, Colombo',
-            coordinates: [79.86152, 6.93492],
-            address: 'Court of Appeal Complex, Hulftsdorp, Colombo 12',
-            phone: '+94 11 2323457',
-            workingHours: '8:30 AM - 4:30 PM',
-            description: 'Handles appeals from lower courts and judicial review matters.'
-        }
-    ];
-
-    // Load Leaflet CSS
-    useEffect(() => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';
-        document.head.appendChild(link);
-
-        return () => {
-            if (document.head.contains(link)) {
-                document.head.removeChild(link);
-            }
-        };
-    }, []);
-
-    // Initialize map
-    useEffect(() => {
-        const initializeMap = async () => {
-            try {
-                setIsMapLoading(true);
-
-                const [L, esriLeaflet] = await Promise.all([
-                    import('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js').then(() => window.L),
-                    import('https://cdnjs.cloudflare.com/ajax/libs/esri-leaflet/3.0.10/esri-leaflet.min.js').then(() => window.L.esri)
-                ]);
-
-                const mapInstance = L.map(mapRef.current).setView([7.8731, 80.7718], 8);
-                L.esri.basemapLayer('Streets').addTo(mapInstance);
-                setMap(mapInstance);
-
-                // Create layers based on selected layer type
-                await createLayers(mapInstance, L);
-
-                setIsMapLoading(false);
-            } catch (error) {
-                console.error('Error initializing map:', error);
-                setMapError(true);
-                setIsMapLoading(false);
-            }
-        };
-
-        if (mapRef.current && !map) {
-            initializeMap();
-        }
-
-        return () => {
-            if (map) {
-                map.remove();
-            }
-        };
-    }, []);
-
-    // Create DSD labels
-    const createDSDLabels = (mapInstance, layer) => {
-        const L = window.L;
-        if (!L || !layer) return;
-
-        const newLabelMarkers = [];
-
-        layer.eachFeature((featureLayer) => {
-            const feature = featureLayer.feature;
-            const labelText = feature.properties.DSD_N || feature.properties.NAME || feature.properties.DSD_NAME || 'Unknown';
-
-            const bounds = featureLayer.getBounds();
-            const center = bounds.getCenter();
-
-            const labelMarker = L.marker(center, {
-                icon: L.divIcon({
-                    className: 'label-icon',
-                    html: `<div style="background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 3px; font-size: 10px; font-weight: bold; text-align: center; border: 1px solid #ccc;">${labelText}</div>`,
-                    iconSize: [100, 20],
-                    iconAnchor: [50, 10]
-                })
-            });
-
-            labelMarker.addTo(mapInstance);
-            newLabelMarkers.push(labelMarker);
-        });
-
-        setLabelMarkers(newLabelMarkers);
-    };
-
-    // Create map layers
-    const createLayers = async (mapInstance, L) => {
-        // Clear existing layers
-        if (featureLayer) mapInstance.removeLayer(featureLayer);
-        if (provincialLayer) mapInstance.removeLayer(provincialLayer);
-        if (districtLayer) mapInstance.removeLayer(districtLayer);
-
-        // Clear existing labels
-        labelMarkers.forEach(marker => {
-            if (mapInstance.hasLayer(marker)) {
-                mapInstance.removeLayer(marker);
-            }
-        });
-        setLabelMarkers([]);
-
-        let layer;
-        if (selectedLayer === 'dsd') {
-            layer = L.esri.featureLayer({
-                url: 'https://services1.arcgis.com/tMAq108b7itjkui5/ArcGIS/rest/services/SL_DSD_codes/FeatureServer/0',
-                style: function (feature) {
-                    return {
-                        color: '#2c3e50',
-                        weight: 1,
-                        fillOpacity: 0.7,
-                        fillColor: '#74b9ff'
-                    };
-                },
-                onEachFeature: function (feature, layer) {
-                    const dsdName = feature.properties.DSD_N || feature.properties.NAME || 'Unknown';
-                    const lawyersInArea = lawyers ? lawyers.filter(lawyer =>
-                        lawyer.district && lawyer.district.toLowerCase().includes(dsdName.toLowerCase())
-                    ).length : 0;
-
-                    let popupContent = '<div style="font-family: Arial, sans-serif;"><h4 style="margin: 0 0 10px 0; color: #2c3e50;">DSD Information</h4>';
-
-                    for (let key in feature.properties) {
-                        if (feature.properties.hasOwnProperty(key) && feature.properties[key] !== null) {
-                            const displayKey = key.replace(/_/g, ' ').toUpperCase();
-                            popupContent += `<div style="margin-bottom: 5px;"><strong>${displayKey}:</strong> ${feature.properties[key]}</div>`;
-                        }
-                    }
-
-                    popupContent += `<div style="margin-bottom: 5px;"><strong>LAWYERS IN AREA:</strong> ${lawyersInArea}</div>`;
-                    popupContent += '</div>';
-
-                    layer.bindPopup(popupContent, {
-                        maxWidth: 300,
-                        className: 'custom-popup'
-                    });
-
-                    layer.on('mouseover', function (e) {
-                        e.target.setStyle({
-                            weight: 2,
-                            fillOpacity: 0.9
-                        });
-                    });
-
-                    layer.on('mouseout', function (e) {
-                        e.target.setStyle({
-                            weight: 1,
-                            fillOpacity: 0.7
-                        });
-                    });
-
-                    layer.on('click', () => {
-                        const areaLawyers = lawyers ? lawyers.filter(lawyer =>
-                            lawyer.district && lawyer.district.toLowerCase().includes(dsdName.toLowerCase())
-                        ) : [];
-                        setSelectedLawyers(areaLawyers);
-                    });
-                }
-            }).addTo(mapInstance);
-
-            // Add event listener for when layer is loaded to create labels
-            layer.on('load', function () {
-                mapInstance.fitBounds(layer.getBounds());
-                createDSDLabels(mapInstance, layer);
-            });
-
-            setFeatureLayer(layer);
-
-        } else if (selectedLayer === 'provincial') {
-            layer = L.esri.featureLayer({
-                url: 'https://services1.arcgis.com/tMAq108b7itjkui5/ArcGIS/rest/services/SL_Province/FeatureServer/0',
-                style: () => ({
-                    color: '#e74c3c',
-                    weight: 2,
-                    fillOpacity: 0.6,
-                    fillColor: '#e74c3c'
-                }),
-                onEachFeature: (feature, layer) => {
-                    const provinceName = feature.properties.PROVINCE || feature.properties.NAME || 'Unknown';
-                    const lawyersInProvince = lawyers ? lawyers.filter(lawyer =>
-                        lawyer.district && getProvinceForDistrict(lawyer.district) === provinceName
-                    ).length : 0;
-
-                    layer.bindPopup(`
-                        <div style="font-family: Arial, sans-serif;">
-                            <h4 style="margin: 0 0 10px 0; color: #e74c3c;">${provinceName} Province</h4>
-                            <p><strong>Lawyers:</strong> ${lawyersInProvince}</p>
-                            <p><strong>Districts covered:</strong> ${getDistrictsInProvince(provinceName).join(', ')}</p>
-                        </div>
-                    `);
-
-                    layer.on('click', () => {
-                        const provinceLawyers = lawyers ? lawyers.filter(lawyer =>
-                            lawyer.district && getProvinceForDistrict(lawyer.district) === provinceName
-                        ) : [];
-                        setSelectedLawyers(provinceLawyers);
-                    });
-                }
-            }).addTo(mapInstance);
-            setProvincialLayer(layer);
-
-        } else if (selectedLayer === 'district') {
-            layer = L.esri.featureLayer({
-                url: 'https://services1.arcgis.com/tMAq108b7itjkui5/ArcGIS/rest/services/SL_District/FeatureServer/0',
-                style: () => ({
-                    color: '#27ae60',
-                    weight: 1.5,
-                    fillOpacity: 0.6,
-                    fillColor: '#27ae60'
-                }),
-                onEachFeature: (feature, layer) => {
-                    const districtName = feature.properties.DISTRICT || feature.properties.NAME || 'Unknown';
-                    const lawyersInDistrict = lawyers ? lawyers.filter(lawyer =>
-                        lawyer.district && lawyer.district.toLowerCase() === districtName.toLowerCase()
-                    ).length : 0;
-
-                    layer.bindPopup(`
-                        <div style="font-family: Arial, sans-serif;">
-                            <h4 style="margin: 0 0 10px 0; color: #27ae60;">${districtName} District</h4>
-                            <p><strong>Lawyers:</strong> ${lawyersInDistrict}</p>
-                            <p><strong>Available:</strong> ${lawyers ? lawyers.filter(l =>
-                        l.district && l.district.toLowerCase() === districtName.toLowerCase() && l.available
-                    ).length : 0}</p>
-                        </div>
-                    `);
-
-                    layer.on('click', () => {
-                        const districtLawyers = lawyers ? lawyers.filter(lawyer =>
-                            lawyer.district && lawyer.district.toLowerCase() === districtName.toLowerCase()
-                        ) : [];
-                        setSelectedLawyers(districtLawyers);
-                    });
-                }
-            }).addTo(mapInstance);
-            setDistrictLayer(layer);
-        }
-
-        // Add lawyer markers
-        if (lawyers && lawyers.length > 0) {
-            addLawyersToMap(mapInstance, L);
-        }
-    };
-
-    // Add lawyers to map
-    const addLawyersToMap = (mapInstance, L) => {
-        if (lawyersLayer) {
-            mapInstance.removeLayer(lawyersLayer);
-        }
-
-        if (!lawyersVisible) return;
-
-        const lawyerLayerGroup = L.layerGroup().addTo(mapInstance);
-        setLawyersLayer(lawyerLayerGroup);
-
-        filteredLawyers.forEach((lawyer) => {
-            if (lawyer.latitude && lawyer.longitude) {
-                const lawyerIcon = L.divIcon({
-                    className: 'lawyer-marker-icon',
-                    html: `
-                        <div style="
-                            width: 16px;
-                            height: 16px;
-                            background: #e27728;
-                            border: 3px solid white;
-                            border-radius: 50%;
-                            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                        "></div>
-                    `,
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        const queryResponse = await fetch(
+          'https://services1.arcgis.com/tMAq108b7itjkui5/ArcGIS/rest/services/SL_DSD_codes/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=102100&f=json'
+        );
+        const data = await queryResponse.json();
+        
+        if (data.features && data.features.length > 0) {
+          setFeatures(data.features);
+          
+          let minX = Infinity, maxX = -Infinity;
+          let minY = Infinity, maxY = -Infinity;
+          
+          data.features.forEach(feature => {
+            if (feature.geometry && feature.geometry.rings) {
+              feature.geometry.rings.forEach(ring => {
+                ring.forEach(([x, y]) => {
+                  minX = Math.min(minX, x);
+                  maxX = Math.max(maxX, x);
+                  minY = Math.min(minY, y);
+                  maxY = Math.max(maxY, y);
                 });
-
-                const popupContent = `
-                    <div style="padding: 10px; max-width: 300px; font-family: Arial, sans-serif;">
-                        <div style="text-align: center; margin-bottom: 10px;">
-                            <img src="${lawyer.image}" alt="${lawyer.name}"
-                                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e27728;">
-                        </div>
-                        <h4 style="margin: 0 0 8px 0; color: #333; text-align: center;">${lawyer.name}</h4>
-                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">
-                            <strong>Specialty:</strong> ${lawyer.speciality}
-                        </p>
-                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">
-                            <strong>District:</strong> ${lawyer.district}
-                        </p>
-                        <p style="margin: 0 0 5px 0; color: #666; font-size: 13px;">
-                            <strong>Experience:</strong> ${lawyer.experience} years
-                        </p>
-                        <div style="text-align: center;">
-                            <span style="
-                                background: ${lawyer.available ? '#10b981' : '#ef4444'};
-                                color: white;
-                                padding: 4px 8px;
-                                border-radius: 12px;
-                                font-size: 11px;
-                                font-weight: bold;
-                            ">
-                                ${lawyer.available ? 'Available' : 'Busy'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-
-                const marker = L.marker([parseFloat(lawyer.latitude), parseFloat(lawyer.longitude)], {
-                    icon: lawyerIcon
-                }).bindPopup(popupContent, {
-                    maxWidth: 320,
-                    className: 'lawyer-popup'
-                });
-
-                lawyerLayerGroup.addLayer(marker);
+              });
             }
-        });
-    };
+          });
+          
+          setMapBounds({ minX, maxX, minY, maxY });
+        }
 
-    // Helper functions for province mapping
-    const getProvinceForDistrict = (district) => {
-        const provinceMapping = {
-            'Colombo': 'Western',
-            'Gampaha': 'Western',
-            'Kalutara': 'Western',
-            'Kandy': 'Central',
-            'Matale': 'Central',
-            'Nuwara Eliya': 'Central',
-            'Galle': 'Southern',
-            'Matara': 'Southern',
-            'Hambantota': 'Southern',
-            'Jaffna': 'Northern',
-            'Kilinochchi': 'Northern',
-            'Mannar': 'Northern',
-            'Mullaitivu': 'Northern',
-            'Vavuniya': 'Northern',
-            'Batticaloa': 'Eastern',
-            'Ampara': 'Eastern',
-            'Trincomalee': 'Eastern',
-            'Kurunegala': 'North Western',
-            'Puttalam': 'North Western',
-            'Anuradhapura': 'North Central',
-            'Polonnaruwa': 'North Central',
-            'Badulla': 'Uva',
-            'Monaragala': 'Uva',
-            'Ratnapura': 'Sabaragamuwa',
-            'Kegalle': 'Sabaragamuwa'
-        };
-        return provinceMapping[district] || 'Unknown';
-    };
-
-    const getDistrictsInProvince = (province) => {
-        const districtsByProvince = {
-            'Western': ['Colombo', 'Gampaha', 'Kalutara'],
-            'Central': ['Kandy', 'Matale', 'Nuwara Eliya'],
-            'Southern': ['Galle', 'Matara', 'Hambantota'],
-            'Northern': ['Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya'],
-            'Eastern': ['Batticaloa', 'Ampara', 'Trincomalee'],
-            'North Western': ['Kurunegala', 'Puttalam'],
-            'North Central': ['Anuradhapura', 'Polonnaruwa'],
-            'Uva': ['Badulla', 'Monaragala'],
-            'Sabaragamuwa': ['Ratnapura', 'Kegalle']
-        };
-        return districtsByProvince[province] || [];
-    };
-
-    // Handle boundaries toggle
-    const toggleBoundaries = () => {
-        if (!map) return;
-
-        if (boundariesVisible) {
-            if (featureLayer) map.removeLayer(featureLayer);
-            if (provincialLayer) map.removeLayer(provincialLayer);
-            if (districtLayer) map.removeLayer(districtLayer);
-            // Hide labels when boundaries are hidden
-            labelMarkers.forEach(marker => {
-                if (map.hasLayer(marker)) {
-                    map.removeLayer(marker);
-                }
-            });
-        } else {
-            if (selectedLayer === 'dsd' && featureLayer) map.addLayer(featureLayer);
-            if (selectedLayer === 'provincial' && provincialLayer) map.addLayer(provincialLayer);
-            if (selectedLayer === 'district' && districtLayer) map.addLayer(districtLayer);
-            // Show labels when boundaries are shown
-            if (labelsVisible) {
-                labelMarkers.forEach(marker => {
-                    if (!map.hasLayer(marker)) {
-                        map.addLayer(marker);
-                    }
-                });
+        try {
+          const token = localStorage.getItem('aToken');
+          const lawyerResponse = await fetch('http://localhost:4000/api/admin/all-lawyers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'atoken': token
             }
+          });
+          
+          const lawyerData = await lawyerResponse.json();
+          if (lawyerData.success && lawyerData.lawyers) {
+            setLawyers(lawyerData.lawyers);
+          }
+        } catch (lawyerError) {
+          console.error('Error fetching lawyers:', lawyerError);
         }
-        setBoundariesVisible(!boundariesVisible);
+        
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load map data: ' + err.message);
+        setLoading(false);
+      }
     };
 
-    // Handle labels toggle
-    const toggleLabels = () => {
-        if (!map || !boundariesVisible) return;
+    fetchData();
+  }, []);
 
-        if (labelsVisible) {
-            labelMarkers.forEach(marker => {
-                if (map.hasLayer(marker)) {
-                    map.removeLayer(marker);
-                }
-            });
-        } else {
-            labelMarkers.forEach(marker => {
-                if (!map.hasLayer(marker)) {
-                    map.addLayer(marker);
-                }
-            });
-        }
-        setLabelsVisible(!labelsVisible);
-    };
+  const projectToSVG = (x, y) => {
+    if (!mapBounds) return { x: 0, y: 0 };
+    
+    const svgWidth = 1000;
+    const svgHeight = 1400;
+    const padding = 40;
+    
+    const { minX, maxX, minY, maxY } = mapBounds;
+    const dataWidth = maxX - minX;
+    const dataHeight = maxY - minY;
+    const dataAspectRatio = dataWidth / dataHeight;
+    
+    const availableWidth = svgWidth - 2 * padding;
+    const availableHeight = svgHeight - 2 * padding;
+    const availableAspectRatio = availableWidth / availableHeight;
+    
+    let scale, offsetX, offsetY;
+    
+    if (dataAspectRatio > availableAspectRatio) {
+      scale = availableWidth / dataWidth;
+      offsetX = padding;
+      offsetY = padding + (availableHeight - dataHeight * scale) / 2;
+    } else {
+      scale = availableHeight / dataHeight;
+      offsetX = padding + (availableWidth - dataWidth * scale) / 2;
+      offsetY = padding;
+    }
+    
+    const svgX = (offsetX + (x - minX) * scale) * zoomLevel + panOffset.x;
+    const svgY = (svgHeight - (offsetY + (y - minY) * scale)) * zoomLevel + panOffset.y;
+    
+    return { x: svgX, y: svgY };
+  };
 
-    // Handle lawyers visibility toggle
-    const toggleLawyers = () => {
-        setLawyersVisible(!lawyersVisible);
+  const latLngToSVG = (lat, lng) => {
+    const x = lng * 20037508.34 / 180;
+    const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+    const mercY = y * 20037508.34 / 180;
+    return projectToSVG(x, mercY);
+  };
 
-        if (map && window.L) {
-            if (lawyersVisible) {
-                if (lawyersLayer) {
-                    map.removeLayer(lawyersLayer);
-                }
-            } else {
-                addLawyersToMap(map, window.L);
-            }
-        }
-    };
+  const generatePath = (rings) => {
+    if (!rings || rings.length === 0) return '';
+    
+    return rings.map(ring => {
+      return ring.map(([x, y], idx) => {
+        const { x: svgX, y: svgY } = projectToSVG(x, y);
+        return `${idx === 0 ? 'M' : 'L'} ${svgX} ${svgY}`;
+      }).join(' ') + ' Z';
+    }).join(' ');
+  };
 
-    // Update layers when selection changes
-    useEffect(() => {
-        if (map) {
-            const L = window.L;
-            if (L) {
-                createLayers(map, L);
-            }
-        }
-    }, [selectedLayer, lawyers, filteredLawyers]);
+  const getColorForFeature = (feature) => {
+    const attrs = feature.attributes;
+    const province = attrs.PROVINCE_N || attrs.PROVINCE || attrs.PRO_NAME || 
+                     attrs.Province || attrs.province || attrs.PROV_NAME;
+    const dsdCode = attrs.DSD_C || attrs.DSD_CODE || attrs.CODE || 
+                    attrs.DSD_N || attrs.DSD_NAME || '';
+    
+    let provinceScheme = provinceColors['Western'];
+    
+    if (province) {
+      const provinceName = province.toString().trim();
+      const matchedProvince = Object.keys(provinceColors).find(key => 
+        provinceName.toLowerCase().includes(key.toLowerCase()) ||
+        key.toLowerCase().includes(provinceName.toLowerCase())
+      );
+      
+      if (matchedProvince) {
+        provinceScheme = provinceColors[matchedProvince];
+      }
+    }
+    
+    const hash = dsdCode.toString().split('').reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    
+    const shadeIndex = Math.abs(hash) % provinceScheme.shades.length;
+    return provinceScheme.shades[shadeIndex];
+  };
 
+  const getUniqueDistricts = () => {
+    const districts = new Set();
+    lawyers.forEach(lawyer => {
+      if (lawyer.district) districts.add(lawyer.district);
+    });
+    return Array.from(districts).sort();
+  };
+
+  const getUniqueValues = (field) => {
+    const values = new Set();
+    features.forEach(f => {
+      const val = f.attributes[field] || f.attributes[field.toUpperCase()] || 
+                  f.attributes[field.toLowerCase()];
+      if (val) values.add(val);
+    });
+    return Array.from(values).sort();
+  };
+
+  // Filter lawyers by district
+  const filteredLawyers = lawyers.filter(lawyer => {
+    if (filters.district && lawyer.district !== filters.district) {
+      return false;
+    }
+    return true;
+  });
+
+  // Analytics calculations
+  const analytics = {
+    totalLawyers: lawyers.length,
+    filteredLawyers: filteredLawyers.length,
+    averageFees: lawyers.length > 0 ? Math.round(lawyers.reduce((sum, l) => sum + (l.fees || 0), 0) / lawyers.length) : 0,
+    topDistrict: lawyers.length > 0 ? Object.entries(
+      lawyers.reduce((acc, l) => {
+        acc[l.district] = (acc[l.district] || 0) + 1;
+        return acc;
+      }, {})
+    ).sort((a, b) => b[1] - a[1])[0] : ['N/A', 0],
+    specialtyDistribution: lawyers.reduce((acc, l) => {
+      acc[l.speciality] = (acc[l.speciality] || 0) + 1;
+      return acc;
+    }, {}),
+    districtDistribution: lawyers.reduce((acc, l) => {
+      acc[l.district] = (acc[l.district] || 0) + 1;
+      return acc;
+    }, {})
+  };
+
+  const indexOfLastLawyer = currentPage * lawyersPerPage;
+  const indexOfFirstLawyer = indexOfLastLawyer - lawyersPerPage;
+  const currentLawyers = filteredLawyers.slice(indexOfFirstLawyer, indexOfLastLawyer);
+  const totalPages = Math.ceil(filteredLawyers.length / lawyersPerPage);
+
+  if (loading) {
     return (
-        <div className='m-5 max-h-[90vh] overflow-y-scroll'>
-            {/* Header with tab switch */}
-            <div className='flex justify-between items-center mb-4'>
-                <h1 className='text-lg font-medium'>Legal Analytics Dashboard</h1>
-                <div className='flex gap-2'>
-                    <button
-                        onClick={() => setActiveTab('lawyers')}
-                        className={`px-4 py-1 rounded-full border ${activeTab === 'lawyers' ? 'bg-indigo-600 text-white' : 'text-gray-700'}`}
-                    >
-                        Lawyers
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('clients')}
-                        className={`px-4 py-1 rounded-full border ${activeTab === 'clients' ? 'bg-indigo-600 text-white' : 'text-gray-700'}`}
-                    >
-                        Clients
-                    </button>
-                </div>
-            </div>
-
-            {/* Lawyers Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-indigo-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Total Lawyers</p>
-                            <p className="text-2xl font-bold text-gray-900">{lawyers ? lawyers.length : 0}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Gavel className="w-6 h-6 text-blue-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-indigo-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Available Now</p>
-                            <p className="text-2xl font-bold text-green-600">
-                                {lawyers ? lawyers.filter(l => l.available).length : 0}
-                            </p>
-                        </div>
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <Activity className="w-6 h-6 text-green-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-indigo-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Specialties</p>
-                            <p className="text-2xl font-bold text-purple-600">{specialties.length}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <BookOpen className="w-6 h-6 text-purple-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-indigo-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Districts Covered</p>
-                            <p className="text-2xl font-bold text-orange-600">
-                                {Object.keys(districtStats).length}
-                            </p>
-                        </div>
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <MapPin className="w-6 h-6 text-orange-600" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="flex flex-col lg:flex-row gap-6">
-                {/* Map Section */}
-                <div className="lg:w-2/3">
-                    <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-indigo-200">
-                        <div className="bg-gray-900 text-white p-4">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-lg font-medium flex items-center gap-2">
-                                    <Map className="w-5 h-5" />
-                                    Legal Services Map
-                                </h2>
-                                <div className="flex gap-2">
-                                    <select
-                                        value={selectedLayer}
-                                        onChange={(e) => setSelectedLayer(e.target.value)}
-                                        className="px-3 py-1 text-sm bg-gray-700 text-white rounded border border-gray-600"
-                                    >
-                                        <option value="dsd">DSD Boundaries</option>
-                                        <option value="district">District Map</option>
-                                        <option value="provincial">Provincial Map</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="relative h-[500px] lg:h-[600px]">
-                            {isMapLoading && (
-                                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-                                    <div className="text-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                                        <p className="text-gray-600 font-medium">Loading Map...</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {mapError ? (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                                    <div className="text-center">
-                                        <p className="text-gray-500 mb-2">Unable to load map</p>
-                                        <p className="text-sm text-gray-400">Please check your internet connection</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div ref={mapRef} className="w-full h-full" />
-                            )}
-                        </div>
-
-                        <div className="bg-gray-50 p-4 border-t">
-                            <div className="flex items-center justify-between text-sm text-gray-600">
-                                <span>Showing {filteredLawyers.length} lawyers</span>
-                                <span>Click on regions to view lawyers in that area</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar */}
-                <div className="lg:w-1/3 space-y-4">
-                    {/* Map Controls */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-indigo-200">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                            <Map className="w-5 h-5" />
-                            Map Controls
-                        </h3>
-                        <div className="space-y-3">
-                            <button
-                                onClick={toggleBoundaries}
-                                className={`w-full flex items-center justify-between p-3 rounded transition-colors ${boundariesVisible
-                                    ? 'bg-blue-50 border-2 border-blue-200 text-blue-800'
-                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    {boundariesVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                    DSD Boundaries
-                                </span>
-                            </button>
-
-                            <button
-                                onClick={toggleLabels}
-                                className={`w-full flex items-center justify-between p-3 rounded transition-colors ${labelsVisible && boundariesVisible
-                                    ? 'bg-blue-50 border-2 border-blue-200 text-blue-800'
-                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                    }`}
-                                disabled={!boundariesVisible}
-                            >
-                                <span className="flex items-center gap-2">
-                                    {labelsVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                    DSD Labels
-                                </span>
-                            </button>
-
-                            <button
-                                onClick={toggleLawyers}
-                                className={`w-full flex items-center justify-between p-3 rounded transition-colors ${lawyersVisible
-                                    ? 'bg-orange-50 border-2 border-orange-200 text-orange-800'
-                                    : 'bg-gray-50 border-2 border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    {lawyersVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                                    Lawyers
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Filters */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-indigo-200">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                            <Filter className="w-5 h-5" />
-                            Filters
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-600 mb-2">
-                                    Search Lawyers
-                                </label>
-                                <div className="relative">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Name or district..."
-                                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-600 mb-2">
-                                    Specialty
-                                </label>
-                                <select
-                                    value={selectedSpecialty}
-                                    onChange={(e) => setSelectedSpecialty(e.target.value)}
-                                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                >
-                                    <option value="">All Specialties</option>
-                                    {specialties.map((spec) => (
-                                        <option key={spec} value={spec}>{spec}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* District Statistics */}
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-indigo-200">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5" />
-                            District Analysis
-                        </h3>
-
-                        <div className="max-h-48 overflow-y-auto space-y-2">
-                            {Object.entries(districtStats).map(([district, stats]) => (
-                                <div key={district} className="flex justify-between items-center p-2 bg-indigo-50 rounded">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">{district}</p>
-                                        <p className="text-xs text-gray-600">
-                                            {stats.available}/{stats.total} available
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-bold text-gray-900">{stats.total}</p>
-                                        <p className="text-xs text-gray-600">
-                                            {stats.specialtiesCount} specialties
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Selected Area Lawyers */}
-                    {selectedLawyers.length > 0 && (
-                        <div className="bg-white rounded-xl p-4 shadow-sm border border-indigo-200">
-                            <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                                <Target className="w-5 h-5" />
-                                Lawyers in Selected Area ({selectedLawyers.length})
-                            </h3>
-
-                            <div className="max-h-64 overflow-y-auto space-y-2">
-                                {selectedLawyers.slice(0, 5).map((lawyer) => (
-                                    <div key={lawyer._id} className="bg-indigo-50 rounded p-3">
-                                        <div className="flex items-center gap-3">
-                                            <img
-                                                src={lawyer.image}
-                                                alt={lawyer.name}
-                                                className="w-10 h-10 rounded-full object-cover"
-                                            />
-                                            <div className="flex-1">
-                                                <h6 className="text-sm font-medium text-gray-900">{lawyer.name}</h6>
-                                                <p className="text-xs text-gray-600">{lawyer.speciality}</p>
-                                                <p className="text-xs text-gray-500">{lawyer.district} • {lawyer.experience} yrs</p>
-                                            </div>
-                                            <div className={`w-3 h-3 ${lawyer.available ? 'bg-green-500' : 'bg-red-500'} rounded-full`}></div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {selectedLawyers.length > 5 && (
-                                    <p className="text-sm text-gray-500 text-center">
-                                        +{selectedLawyers.length - 5} more lawyers
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading GIS Data...</p>
         </div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-gray-800 font-semibold mb-2">Error Loading Map</p>
+          <p className="text-gray-600 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-screen bg-gray-100 flex overflow-hidden">
+      <div className="w-[70%] h-full flex flex-col overflow-hidden">
+        <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MapPin className="w-5 h-5 text-blue-600" />
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">SL DSD Codes</h1>
+                <p className="text-xs text-gray-500">Sri Lankan Divisional Secretariat Divisions</p>
+              </div>
+            </div>
+            <div className="text-xs text-gray-600">
+              {features.length} DSDs | {lawyers.length} Lawyers
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex overflow-hidden">
+          <div className="w-56 bg-white border-r border-gray-200 p-3 overflow-y-auto flex-shrink-0">
+            <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <Filter className="w-3 h-3" />
+              Filters
+            </h3>
+            
+            <div className="mb-3 p-2 bg-gray-50 rounded">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showLawyers}
+                  onChange={(e) => setShowLawyers(e.target.checked)}
+                  className="w-3 h-3 text-blue-600"
+                />
+                <Scale className="w-3 h-3 text-gray-600" />
+                <span className="text-xs font-medium">Show Lawyers</span>
+              </label>
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">District</label>
+              <select
+                value={filters.district}
+                onChange={(e) => setFilters({...filters, district: e.target.value})}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All Districts</option>
+                {getUniqueDistricts().map(dist => (
+                  <option key={dist} value={dist}>{dist}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setFilters({ province: '', district: '', dsd: '' })}
+              className="w-full px-2 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition mb-3"
+            >
+              Clear Filters
+            </button>
+
+            <div className="border-t pt-3">
+              <h4 className="text-xs font-semibold text-gray-700 mb-2">Map Controls</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.2))}
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.2))}
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
+                  title="Reset View"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 relative overflow-hidden bg-gray-50">
+            <svg
+              ref={mapRef}
+              viewBox="0 0 1000 1400"
+              className="w-full h-full"
+              preserveAspectRatio="xMidYMid meet"
+              style={{ background: '#f0f4f8' }}
+            >
+              <rect width="1000" height="1400" fill="#e5e9f0" />
+              
+              {features.map((feature, idx) => {
+                if (!feature.geometry || !feature.geometry.rings) return null;
+                
+                const path = generatePath(feature.geometry.rings);
+                const color = getColorForFeature(feature);
+                const isSelected = selectedFeature === idx;
+                
+                return (
+                  <g key={idx}>
+                    <path
+                      d={path}
+                      fill={color}
+                      stroke="#ffffff"
+                      strokeWidth={isSelected ? "2.5" : "1.5"}
+                      opacity={isSelected ? "0.9" : "0.75"}
+                      className="cursor-pointer transition-all"
+                      onClick={() => setSelectedFeature(selectedFeature === idx ? null : idx)}
+                    />
+                  </g>
+                );
+              })}
+
+              {showLawyers && filteredLawyers.map((lawyer, idx) => {
+                if (!lawyer.latitude || !lawyer.longitude) return null;
+                
+                const { x, y } = latLngToSVG(lawyer.latitude, lawyer.longitude);
+                const isSelected = selectedLawyer?._id === lawyer._id;
+                
+                return (
+                  <g 
+                    key={`lawyer-${idx}`} 
+                    className="cursor-pointer"
+                    onClick={() => setSelectedLawyer(selectedLawyer?._id === lawyer._id ? null : lawyer)}
+                  >
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={isSelected ? "10" : "8"}
+                      fill={isSelected ? "#b91c1c" : "#dc2626"}
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      opacity="0.9"
+                    />
+                    <path
+                      d={`M ${x} ${y-14} l -5 -9 h 10 z`}
+                      fill={isSelected ? "#b91c1c" : "#dc2626"}
+                      stroke="#ffffff"
+                      strokeWidth="1.5"
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {selectedFeature !== null && features[selectedFeature] && (
+              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 max-w-xs z-10">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-semibold text-sm text-gray-800">DSD Details</h3>
+                  <button 
+                    onClick={() => setSelectedFeature(null)}
+                    className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="space-y-1 text-xs max-h-48 overflow-y-auto">
+                  {Object.entries(features[selectedFeature].attributes).slice(0, 6).map(([key, value]) => (
+                    <div key={key} className="flex justify-between gap-2">
+                      <span className="text-gray-600 font-medium">{key}:</span>
+                      <span className="text-gray-800 break-all">{value !== null ? value.toString() : 'N/A'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedLawyer && (
+              <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl p-4 w-72 z-10">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-semibold text-sm text-gray-800">Lawyer Details</h3>
+                  <button 
+                    onClick={() => setSelectedLawyer(null)}
+                    className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="flex gap-3 mb-3">
+                  {selectedLawyer.image ? (
+                    <img 
+                      src={selectedLawyer.image} 
+                      alt={selectedLawyer.name}
+                      className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
+                      <Users className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="font-bold text-sm text-gray-800">{selectedLawyer.name}</p>
+                    <p className="text-xs text-gray-600">{selectedLawyer.speciality}</p>
+                    <p className="text-xs text-blue-600 font-semibold mt-1">Rs. {selectedLawyer.fees}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">District:</span>
+                    <span className="text-gray-800 font-medium">{selectedLawyer.district}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Experience:</span>
+                    <span className="text-gray-800 font-medium">{selectedLawyer.experience}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phone:</span>
+                    <span className="text-gray-800 font-medium">{selectedLawyer.phone}</span>
+                  </div>
+                  {selectedLawyer.court1 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Court:</span>
+                      <span className="text-gray-800 font-medium">{selectedLawyer.court1}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="w-[30%] h-full bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Analytics Dashboard
+          </h2>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-blue-50 p-2 rounded-lg">
+              <p className="text-xl font-bold text-blue-600">{analytics.totalLawyers}</p>
+              <p className="text-xs text-gray-600">Total</p>
+            </div>
+            <div className="bg-green-50 p-2 rounded-lg">
+              <p className="text-xl font-bold text-green-600">{analytics.filteredLawyers}</p>
+              <p className="text-xs text-gray-600">Filtered</p>
+            </div>
+            <div className="bg-purple-50 p-2 rounded-lg">
+              <p className="text-lg font-bold text-purple-600">Rs.{analytics.averageFees}</p>
+              <p className="text-xs text-gray-600">Avg. Fees</p>
+            </div>
+            <div className="bg-orange-50 p-2 rounded-lg">
+              <p className="text-lg font-bold text-orange-600">{analytics.topDistrict[1]}</p>
+              <p className="text-xs text-gray-600 truncate">{analytics.topDistrict[0]}</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-2 rounded-lg mb-2">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <Award className="w-3 h-3" />
+              Top Specialties
+            </h4>
+            <div className="space-y-1">
+              {Object.entries(analytics.specialtyDistribution)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([specialty, count]) => (
+                  <div key={specialty} className="flex justify-between text-xs">
+                    <span className="text-gray-600 truncate">{specialty}</span>
+                    <span className="text-gray-800 font-semibold">{count}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-2 rounded-lg">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <MapPinned className="w-3 h-3" />
+              District Distribution
+            </h4>
+            <div className="space-y-1 max-h-20 overflow-y-auto">
+              {Object.entries(analytics.districtDistribution)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([district, count]) => (
+                  <div key={district} className="flex justify-between text-xs">
+                    <span className="text-gray-600 truncate">{district}</span>
+                    <span className="text-gray-800 font-semibold">{count}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="px-4 py-2 border-b border-gray-200 flex-shrink-0">
+            <h3 className="text-xs font-semibold text-gray-700">Lawyers List</h3>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-4 py-2">
+            {currentLawyers.length > 0 ? (
+              <div className="space-y-2">
+                {currentLawyers.map((lawyer) => (
+                  <div key={lawyer._id} className="p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition flex gap-2">
+                    {lawyer.image ? (
+                      <img 
+                        src={lawyer.image} 
+                        alt={lawyer.name}
+                        className="w-12 h-12 rounded object-cover border border-gray-300 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs text-gray-800 truncate">{lawyer.name}</p>
+                      <p className="text-xs text-gray-600 truncate">{lawyer.speciality}</p>
+                      <p className="text-xs text-gray-500">{lawyer.district}</p>
+                      <p className="text-xs text-blue-600 font-semibold">Rs. {lawyer.fees}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-8">No lawyers found</p>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="px-4 py-2 border-t border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                >
+                  Previous
+                </button>
+                <span className="text-xs text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default GISdashboard;
+export default GISDashboard;

@@ -90,7 +90,28 @@ const LawyerContextProvider = (props) => {
             toast.error(error.message)
         }
     }
+    
+    const sendEmailToAdmin = async (subject, message) => {
+  try {
+    const { data } = await axios.post(
+      backendUrl + '/api/lawyer/send-email-to-admin',
+      { subject, message },
+      { headers: { dToken } }
+    );
 
+    if (data.success) {
+      toast.success(data.message);
+      return true;
+    } else {
+      toast.error(data.message);
+      return false;
+    }
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to send email");
+    console.error("Send email error:", error);
+    return false;
+  }
+};
     const value = {
         dToken, setDToken,
         backendUrl,
@@ -99,7 +120,7 @@ const LawyerContextProvider = (props) => {
         completeAppointment, cancelAppointment,
         dashData, setDashData, getDashData,
         profileData, setProfileData,
-        getProfileData,
+        getProfileData,  sendEmailToAdmin 
     }
     
     return (

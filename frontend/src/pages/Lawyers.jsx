@@ -588,7 +588,7 @@ const Lawyers = () => {
             </div>
 
             {/* Consultation Type Filter */}
-            <div className="flex-1 min-w-[200px]">
+            {/* <div className="flex-1 min-w-[200px]">
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Consultation Type
               </label>
@@ -604,7 +604,7 @@ const Lawyers = () => {
                   <option key={method} value={method}>{method}</option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
             {/* Experience Filter */}
             <div className="flex-1 min-w-[200px]">

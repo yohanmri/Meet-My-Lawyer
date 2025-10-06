@@ -122,6 +122,14 @@ const MyAppointments = () => {
     </span>
   }
 
+  // Helper function to get lawyer image with fallback
+  const getLawyerImage = (lawyerData) => {
+    if (lawyerData?.image && lawyerData.image.trim() !== '') {
+      return lawyerData.image;
+    }
+    return 'https://via.placeholder.com/150/cccccc/666666?text=No+Image';
+  }
+
   const renderCardView = () => (
     <div className="space-y-4">
       {currentAppointments.map((item, index) => (
@@ -131,7 +139,7 @@ const MyAppointments = () => {
             <div className="flex-shrink-0">
               <img 
                 className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover bg-indigo-50" 
-                src={item.lawyerData.image} 
+                src={getLawyerImage(item.lawyerData)} 
                 alt={item.lawyerData.name}
               />
             </div>
@@ -210,6 +218,7 @@ const MyAppointments = () => {
       ))}
     </div>
   )
+
   const renderTableView = () => (
     <div className="overflow-x-auto bg-[#e6e6ef] border border-gray-200 rounded-lg shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
@@ -228,7 +237,11 @@ const MyAppointments = () => {
             <tr key={index} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <img className="h-10 w-10 rounded-full bg-indigo-50" src={item.lawyerData.image} alt="" />
+                  <img 
+                    className="h-10 w-10 rounded-full bg-indigo-50 object-cover" 
+                    src={getLawyerImage(item.lawyerData)} 
+                    alt=""
+                  />
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-900">{item.lawyerData.name}</p>
                   </div>

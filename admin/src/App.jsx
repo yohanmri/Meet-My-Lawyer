@@ -16,6 +16,9 @@ import LawyerDashboard from './pages/Lawyer/LawyerDashboard';
 import LawyerAppointment from './pages/Lawyer/LawyerAppointment';
 import LawyerProfile from './pages/Lawyer/LawyerProfile';
 import Applications_lawyers from './pages/Admin/Applications_lawyers';
+import GISClientDashboard from './pages/Admin/GISClientDashboard';
+import MailDashboard from './pages/Admin/MailDashboard';
+import MailDashboardtoAdmin from './pages/Lawyer/MailDashboardtoAdmin';
 
 
 const App = () => {
@@ -34,15 +37,18 @@ const App = () => {
           <Route path='/' element={<></>} />
           <Route path='/admin-dashboard' element={<Dashboard />} />
           <Route path='/gis-dashboard' element={<GISdashboard />} />
+          <Route path='/gis-client-dashboard' element={<GISClientDashboard/>} />
           <Route path='/all-appointments' element={<AllApointments />} />
           <Route path='/application-requests' element={<Applications_lawyers />} />
           <Route path='/add-lawyer' element={<AddLawyer />} />
           <Route path='/lawyer-list' element={<LawyersList />} />
+          <Route path='/mail' element={<MailDashboard/>} />
 
           {/*  Lawyer Route  */}
           <Route path='/lawyer-dashboard' element={<LawyerDashboard />} />
           <Route path='/lawyer-appointments' element={<LawyerAppointment />} />
           <Route path='/lawyer-profile' element={<LawyerProfile />} />
+          <Route path='/mail-to-admin' element={<MailDashboardtoAdmin/>}/>
         </Routes>
       </div>
     </div>

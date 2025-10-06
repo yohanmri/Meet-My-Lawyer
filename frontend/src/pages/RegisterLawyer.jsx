@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, User, Mail, Phone, GraduationCap, MapPin, Scale, FileText, Camera, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, User, Mail, Phone, GraduationCap, MapPin, Scale, FileText, Camera, Upload, MapPinned } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const RegisterLawyer = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [passwordConfirm, setPasswordConfirm] = useState('');
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         application_name: '',
         application_email: '',
@@ -37,6 +39,47 @@ const RegisterLawyer = () => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+    // Sri Lankan specific data
+    const specialities = [
+        'Criminal Law',
+        'Civil Law',
+        'Family Law',
+        'Corporate Law',
+        'Immigration Law',
+        'Property Law',
+        'Labour Law',
+        'Constitutional Law',
+        'Environmental Law',
+        'Intellectual Property Law',
+        'Banking and Finance Law',
+        'Tax Law',
+        'Human Rights Law',
+        'General Practice'
+    ];
+
+    const degrees = [
+        'Sri Lanka Law College',
+        'LLB - University of Colombo',
+        'LLB - University of Peradeniya',
+        'LLB - University of Jaffna',
+        'LLB - University of Ruhuna',
+        'LLB - Eastern University',
+        'LLB - South Eastern University',
+        'LLB - Open University of Sri Lanka',
+        'LLB - Kotelawala Defence University',
+        'LLB - University of Sri Jayewardenepura',
+        'Attorney-at-Law',
+        'Other Legal Qualification'
+    ];
+
+    const districts = [
+        'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+        'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+        'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+        'Matale', 'Matara', 'Monaragala', 'Mullaitivu', 'Nuwara Eliya',
+        'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+    ];
+
     const steps = [
         { id: 'personal', title: 'Personal Info', icon: User },
         { id: 'contact', title: 'Contact Details', icon: Mail },
@@ -47,11 +90,100 @@ const RegisterLawyer = () => {
         { id: 'review', title: 'Review', icon: Camera }
     ];
 
+    // Live validation
+    useEffect(() => {
+        validateCurrentStep();
+    }, [formData, passwordConfirm, currentStep]);
+
+    const validateCurrentStep = () => {
+        const newErrors = {};
+        
+        switch(currentStep) {
+            case 0: // Personal Info
+                if (formData.application_name && formData.application_name.length < 3) {
+                    newErrors.name = 'Name must be at least 3 characters';
+                }
+                if (formData.application_dob) {
+                    const dobYear = new Date(formData.application_dob).getFullYear();
+                    if (dobYear >= 2000) {
+                        newErrors.dob = 'Must be born before 2000';
+                    }
+                }
+                break;
+                
+            case 1: // Contact Details
+                if (formData.application_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.application_email)) {
+                    newErrors.email = 'Invalid email format';
+                }
+                if (formData.application_password && formData.application_password.length < 8) {
+                    newErrors.password = 'Password must be at least 8 characters';
+                }
+                if (passwordConfirm && formData.application_password !== passwordConfirm) {
+                    newErrors.passwordConfirm = 'Passwords do not match';
+                }
+                if (formData.application_phone && !/^(?:\+94|0)?7[0-9]{8}$/.test(formData.application_phone.replace(/\s/g, ''))) {
+                    newErrors.phone = 'Invalid Sri Lankan mobile number';
+                }
+                if (formData.application_office_phone && formData.application_office_phone.length > 0 && 
+                    !/^(?:\+94|0)?(?:11|21|31|41|51|61|91|81|71|23|24|25|26|27|32|33|34|35|36|37|38|45|47|52|54|55|57|63|65|66|67)[0-9]{7}$/.test(formData.application_office_phone.replace(/\s/g, ''))) {
+                    newErrors.officePhone = 'Invalid Sri Lankan landline number';
+                }
+                break;
+        }
+        
+        setErrors(newErrors);
+    };
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
+    };
+
+    const handleLanguageToggle = (language) => {
+        setFormData(prev => ({
+            ...prev,
+            application_languages_spoken: prev.application_languages_spoken.includes(language)
+                ? prev.application_languages_spoken.filter(l => l !== language)
+                : [...prev.application_languages_spoken, language]
+        }));
+    };
+
+    const handleDegreeToggle = (degree) => {
+        setFormData(prev => ({
+            ...prev,
+            application_degree: prev.application_degree.includes(degree)
+                ? prev.application_degree.filter(d => d !== degree)
+                : [...prev.application_degree, degree]
+        }));
+    };
+
+    const getCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    handleInputChange('application_latitude', position.coords.latitude);
+                    handleInputChange('application_longitude', position.coords.longitude);
+                    toast.success('Location captured successfully!');
+                },
+                (error) => {
+                    toast.error('Unable to get location. Please enter manually.');
+                }
+            );
+        } else {
+            toast.error('Geolocation is not supported by your browser');
+        }
+    };
+
+    const formatPhoneNumber = (value, isOffice = false) => {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.startsWith('94')) {
+            return '+94 ' + cleaned.slice(2).replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3');
+        } else if (cleaned.startsWith('0')) {
+            return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+        }
+        return value;
     };
 
     const handleFileChange = (field, file) => {
@@ -116,13 +248,18 @@ const RegisterLawyer = () => {
             return false;
         }
 
+        if (formData.application_password !== passwordConfirm) {
+            toast.error('Passwords do not match');
+            return false;
+        }
+
         if (formData.application_languages_spoken.length === 0) {
-            toast.error('Please specify at least one language spoken');
+            toast.error('Please select at least one language');
             return false;
         }
 
         if (formData.application_degree.length === 0) {
-            toast.error('Please specify your degrees');
+            toast.error('Please select at least one degree');
             return false;
         }
 
@@ -190,10 +327,11 @@ const RegisterLawyer = () => {
                         type="text"
                         value={formData.application_name}
                         onChange={(e) => handleInputChange('application_name', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        className={`w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
                         placeholder="Enter your full name"
                         required
                     />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
@@ -210,24 +348,29 @@ const RegisterLawyer = () => {
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth (Must be before 2000)</label>
                     <input
                         type="date"
                         value={formData.application_dob}
                         onChange={(e) => handleInputChange('application_dob', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        max="1999-12-31"
+                        className={`w-full px-3 py-2 border ${errors.dob ? 'border-red-500' : 'border-gray-300'} rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
                     />
+                    {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Speciality *</label>
-                    <input
-                        type="text"
+                    <select
                         value={formData.application_speciality}
                         onChange={(e) => handleInputChange('application_speciality', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="e.g., Criminal Law, Corporate Law"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         required
-                    />
+                    >
+                        <option value="">Select Speciality</option>
+                        {specialities.map(spec => (
+                            <option key={spec} value={spec}>{spec}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
             <div>
@@ -253,55 +396,91 @@ const RegisterLawyer = () => {
                         type="email"
                         value={formData.application_email}
                         onChange={(e) => handleInputChange('application_email', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        className={`w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
                         placeholder="your.email@example.com"
                         required
                     />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
-
+                
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
                     <input
                         type="password"
                         value={formData.application_password}
                         onChange={(e) => handleInputChange('application_password', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className={`w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                         placeholder="Enter your password (min 8 characters)"
                         required
                     />
+                    {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
                 </div>
+                
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
                     <input
-                        type="tel"
-                        value={formData.application_phone}
-                        onChange={(e) => handleInputChange('application_phone', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="+1 (555) 123-4567"
+                        type="password"
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        className={`w-full px-3 py-2 border ${errors.passwordConfirm ? 'border-red-500' : 'border-gray-300'} rounded-md`}
+                        placeholder="Re-enter your password"
                         required
                     />
+                    {errors.passwordConfirm && <p className="text-red-500 text-xs mt-1">{errors.passwordConfirm}</p>}
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Office Phone</label>
-                    <input
-                        type="tel"
-                        value={formData.application_office_phone}
-                        onChange={(e) => handleInputChange('application_office_phone', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="+1 (555) 987-6543"
-                    />
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number *</label>
+                        <input
+                            type="tel"
+                            value={formData.application_phone}
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value);
+                                handleInputChange('application_phone', formatted);
+                            }}
+                            className={`w-full px-3 py-2 border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                            placeholder="077 123 4567"
+                            required
+                        />
+                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Office Phone</label>
+                        <input
+                            type="tel"
+                            value={formData.application_office_phone}
+                            onChange={(e) => {
+                                const formatted = formatPhoneNumber(e.target.value, true);
+                                handleInputChange('application_office_phone', formatted);
+                            }}
+                            className={`w-full px-3 py-2 border ${errors.officePhone ? 'border-red-500' : 'border-gray-300'} rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200`}
+                            placeholder="011 234 5678"
+                        />
+                        {errors.officePhone && <p className="text-red-500 text-xs mt-1">{errors.officePhone}</p>}
+                    </div>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken *</label>
-                    <input
-                        type="text"
-                        value={formData.application_languages_spoken.join(', ')}
-                        onChange={(e) => handleArrayInput('application_languages_spoken', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="English, Spanish, French (separate with commas)"
-                        required
-                    />
+            </div>
+            
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Languages Spoken *</label>
+                <div className="flex gap-6">
+                    {['Sinhala', 'Tamil', 'English'].map(language => (
+                        <label key={language} className="flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={formData.application_languages_spoken.includes(language)}
+                                onChange={() => handleLanguageToggle(language)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="ml-2 text-gray-700">{language}</span>
+                        </label>
+                    ))}
                 </div>
+                {formData.application_languages_spoken.length === 0 && (
+                    <p className="text-gray-500 text-xs mt-1">Please select at least one language</p>
+                )}
             </div>
         </div>
     );
@@ -311,16 +490,25 @@ const RegisterLawyer = () => {
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Education & Qualifications</h2>
             <div className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Degrees *</label>
-                    <input
-                        type="text"
-                        value={formData.application_degree.join(', ')}
-                        onChange={(e) => handleArrayInput('application_degree', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="J.D., LL.M., B.A. (separate with commas)"
-                        required
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Degrees & Qualifications *</label>
+                    <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
+                        {degrees.map(degree => (
+                            <label key={degree} className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.application_degree.includes(degree)}
+                                    onChange={() => handleDegreeToggle(degree)}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-gray-700">{degree}</span>
+                            </label>
+                        ))}
+                    </div>
+                    {formData.application_degree.length === 0 && (
+                        <p className="text-gray-500 text-xs mt-1">Please select at least one degree</p>
+                    )}
                 </div>
+                
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Legal Professionals Information *</label>
                     <textarea
@@ -358,7 +546,7 @@ const RegisterLawyer = () => {
                         value={formData.application_bar_association}
                         onChange={(e) => handleInputChange('application_bar_association', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="e.g., New York State Bar"
+                        placeholder="e.g., Bar Association of Sri Lanka"
                         required
                     />
                 </div>
@@ -374,7 +562,7 @@ const RegisterLawyer = () => {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fees</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fees (LKR)</label>
                     <input
                         type="number"
                         value={formData.application_fees}
@@ -415,26 +603,30 @@ const RegisterLawyer = () => {
             <div className="grid md:grid-cols-2 gap-6">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">District *</label>
-                    <input
-                        type="text"
+                    <select
                         value={formData.application_district}
                         onChange={(e) => handleInputChange('application_district', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="Enter your district"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         required
-                    />
+                    >
+                        <option value="">Select District</option>
+                        {districts.map(district => (
+                            <option key={district} value={district}>{district}</option>
+                        ))}
+                    </select>
                 </div>
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Complete Address *</label>
                     <textarea
-                        value={typeof formData.application_address === 'string' ? formData.application_address : JSON.stringify(formData.application_address, null, 2)}
+                        value={typeof formData.application_address === 'string' ? formData.application_address : formData.application_address.street || ''}
                         onChange={(e) => handleInputChange('application_address', { street: e.target.value, district: formData.application_district })}
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                        placeholder="Enter your complete address"
+                        placeholder="Enter your complete office address"
                         required
                     />
                 </div>
+                
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
                     <input
@@ -456,6 +648,18 @@ const RegisterLawyer = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         placeholder="Enter longitude"
                     />
+                </div>
+                
+                <div className="md:col-span-2">
+                    <button
+                        type="button"
+                        onClick={getCurrentLocation}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-all duration-200"
+                    >
+                        <MapPinned size={20} />
+                        Get Current Location (My Office)
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1">Click to automatically fill latitude and longitude of your office location</p>
                 </div>
             </div>
         </div>
@@ -572,6 +776,14 @@ const RegisterLawyer = () => {
                         <span className="font-medium text-gray-600">License Number:</span>
                         <span className="text-gray-900">{formData.application_license_number || 'Not provided'}</span>
                     </div>
+                    <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span className="font-medium text-gray-600">Degrees:</span>
+                        <span className="text-gray-900 text-right">{formData.application_degree.join(', ') || 'Not provided'}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-200">
+                        <span className="font-medium text-gray-600">Bar Association:</span>
+                        <span className="text-gray-900">{formData.application_bar_association || 'Not provided'}</span>
+                    </div>
                 </div>
             </div>
 
@@ -645,15 +857,9 @@ const RegisterLawyer = () => {
                 submitData.append('application_birth_certificate', formData.application_birth_certificate);
             }
             if (formData.application_legal_professionals_certificate.length > 0) {
-                formData.application_legal_professionals_certificate.forEach((file, index) => {
+                formData.application_legal_professionals_certificate.forEach((file) => {
                     submitData.append('application_legal_professionals_certificate', file);
                 });
-            }
-
-            // Debug: Log FormData contents
-            console.log('Submitting FormData with files:');
-            for (let [key, value] of submitData.entries()) {
-                console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
             }
 
             // Submit to backend
@@ -695,7 +901,7 @@ const RegisterLawyer = () => {
                     application_birth_certificate: null,
                     application_legal_professionals_certificate: []
                 });
-
+                setPasswordConfirm('');
                 setCurrentStep(0);
             } else {
                 toast.error(response.data.message || 'Failed to submit application');
@@ -711,8 +917,8 @@ const RegisterLawyer = () => {
     return (
         <div className='mt-8'>
             <div className="max-w-4xl mx-auto">
-            <div className="bg-[#e6e6ef] rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-                        <div
+                <div className="bg-[#e6e6ef] rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                    <div
                         style={{ background: 'linear-gradient(to right, #D00C1F, #6A0610)' }}
                         className=" px-4 py-2">
                         <h1 className="text-2xl font-bold text-white">Lawyer Registration</h1>

@@ -706,6 +706,37 @@ const rejectApplication = async (req, res) => {
   }
 };
 
+// API to send email to lawyers
+const sendEmailToLawyers = async (req, res) => {
+  try {
+    const { recipientEmails, subject, message } = req.body;
+
+    if (!recipientEmails || recipientEmails.length === 0) {
+      return res.json({ success: false, message: "No recipients selected" });
+    }
+
+    if (!subject || !message) {
+      return res.json({ success: false, message: "Subject and message are required" });
+    }
+
+    // Import the email sending function
+    const { sendBulkEmail } = await import('../config/simpleEmail.js');
+    
+    const emailSent = await sendBulkEmail(recipientEmails, subject, message);
+
+    if (emailSent) {
+      res.json({ success: true, message: `Email sent successfully to ${recipientEmails.length} lawyer(s)` });
+    } else {
+      res.json({ success: false, message: "Failed to send emails. Please check email configuration." });
+    }
+
+  } catch (error) {
+    console.error("Error sending emails:", error);
+    res.json({ success: false, message: error.message || "Server error occurred while sending emails" });
+  }
+};
+
+
 export {
   addLawyer,
   loginAdmin,
@@ -720,5 +751,6 @@ export {
   resetLawyerPassword,
   checkLawyerPassword,
   approveApplication,
-  rejectApplication
+  rejectApplication,
+  sendEmailToLawyers
 };

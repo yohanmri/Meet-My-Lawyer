@@ -12,9 +12,11 @@ import {
   updateLawyer,
   getLawyer
 } from "../controllers/adminController.js";
+
 import upload from "../middlewares/multer.js";
 import authAdmin from "../middlewares/authAdmin.js";
 import { changeAvailability } from "../controllers/lawyerController.js";
+import { sendEmailToLawyers } from "../controllers/adminController.js";
 
 const adminRouter = express.Router();
 
@@ -36,6 +38,9 @@ adminRouter.post("/change-availability", authAdmin, changeAvailability);
 adminRouter.get('/appointments', authAdmin, appointmentsAdmin);
 adminRouter.post('/cancel-appointment', authAdmin, appointmentCancel);
 adminRouter.get('/dashboard', authAdmin, adminDashboard);
+
+//Email sending from the dashboard (like a regular mail)
+adminRouter.post("/send-email-to-lawyers", authAdmin, sendEmailToLawyers);
 
 // TWO ROUTES FOR APPLICATION APPROVAL/REJECTION
 adminRouter.post("/approve-application", authAdmin, approveApplication);

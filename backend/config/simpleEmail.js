@@ -114,3 +114,92 @@ export const sendRejectionEmail = async (recipientEmail, recipientName) => {
         return false;
     }
 };
+
+export const sendBulkEmail = async (recipients, subject, messageContent) => {
+  try {
+    let sendSmtpEmail = new brevo.SendSmtpEmail();
+    
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #6A0610; padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Meet My Lawyer</h1>
+        </div>
+        <div style="padding: 30px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 20px; border-radius: 8px;">
+            ${messageContent.replace(/\n/g, '<br>')}
+          </div>
+        </div>
+        <div style="background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+          <p>This is an automated message from Meet My Lawyer Admin Panel</p>
+        </div>
+      </div>
+    `;
+    
+    sendSmtpEmail.sender = { 
+      name: "MML Admin", 
+      email: process.env.EMAIL_USER || "noreply@mml.com" 
+    };
+    
+    // Convert email array to Brevo format
+    sendSmtpEmail.to = recipients.map(email => ({ email: email }));
+    
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Bulk email sent successfully to ${recipients.length} recipient(s)`);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Bulk email sending failed:', error.response?.body || error.message);
+    console.log('Email would have been sent to:', recipients);
+    return false;
+  }
+};
+
+export const sendEmailFromLawyer = async (adminEmail, subject, messageContent, lawyerName, lawyerEmail) => {
+  try {
+    let sendSmtpEmail = new brevo.SendSmtpEmail();
+    
+    sendSmtpEmail.subject = `[Lawyer Message] ${subject}`;
+    sendSmtpEmail.htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #6A0610; padding: 20px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Meet My Lawyer</h1>
+          <p style="color: white; margin: 5px 0; font-size: 14px;">Message from Lawyer</p>
+        </div>
+        <div style="padding: 30px; background-color: #f9f9f9;">
+          <div style="background-color: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 5px 0;"><strong>From:</strong> ${lawyerName}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${lawyerEmail}</p>
+            <p style="margin: 5px 0;"><strong>Subject:</strong> ${subject}</p>
+          </div>
+          <div style="background-color: white; padding: 20px; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Message:</h3>
+            ${messageContent.replace(/\n/g, '<br>')}
+          </div>
+        </div>
+        <div style="background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+          <p>This message was sent from the MML Lawyer Panel</p>
+          <p>Reply directly to: ${lawyerEmail}</p>
+        </div>
+      </div>
+    `;
+    
+    sendSmtpEmail.sender = { 
+      name: lawyerName, 
+      email: process.env.EMAIL_USER || "noreply@mml.com"
+    };
+    
+    sendSmtpEmail.to = [{ email: adminEmail, name: "Admin" }];
+    
+    // Set reply-to as lawyer's email
+    sendSmtpEmail.replyTo = { email: lawyerEmail, name: lawyerName };
+    
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`Email sent to admin from lawyer: ${lawyerName}`);
+    return true;
+    
+  } catch (error) {
+    console.error('Email sending to admin failed:', error.response?.body || error.message);
+    return false;
+  }
+};

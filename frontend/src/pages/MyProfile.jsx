@@ -17,11 +17,21 @@ const MyProfile = () => {
       formData.append('address', JSON.stringify(userData.address));
       formData.append('gender', userData.gender);
       formData.append('dob', userData.dob);
-      image && formData.append('image', image);
+      
+      if (image) {
+        formData.append('image', image);
+      }
 
-      const { data } = await axios.post(`${backendUrl}/api/user/update-profile`, formData, {
-        headers: { token },
-      });
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/update-profile`, 
+        formData, 
+        {
+          headers: { 
+            token,
+            'Content-Type': 'multipart/form-data'
+          },
+        }
+      );
 
       if (data.success) {
         toast.success(data.message);
@@ -33,12 +43,12 @@ const MyProfile = () => {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
   return userData && (
-    <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg space-y-6 text-sm">
+    <div className="max-w-3xl mx-auto bg-white-400 p-6 rounded-lg shadow-lg space-y-6 text-sm">
 
       <div className="flex items-center justify-center">
         {isEdit ? (
@@ -55,7 +65,13 @@ const MyProfile = () => {
                 alt="Upload"
               />
             )}
-            <input type="file" id="image" hidden onChange={(e) => setImage(e.target.files[0])} />
+            <input 
+              type="file" 
+              id="image" 
+              hidden 
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])} 
+            />
           </label>
         ) : (
           <img className="w-36 h-36 object-cover rounded-full" src={userData.image} alt="Profile" />
@@ -108,6 +124,7 @@ const MyProfile = () => {
                   }))
                 }
                 type="text"
+                placeholder="Address Line 1"
               />
               <input
                 className="w-full bg-gray-50 border rounded px-2 py-1 focus:outline-none"
@@ -119,6 +136,7 @@ const MyProfile = () => {
                   }))
                 }
                 type="text"
+                placeholder="Address Line 2"
               />
             </div>
           ) : (
@@ -136,7 +154,7 @@ const MyProfile = () => {
           <p className="font-medium">Gender:</p>
           {isEdit ? (
             <select
-              className="bg-gray-50 border rounded px-2 py-1"
+              className="bg-gray-50 border rounded px-2 py-1 focus:outline-none"
               value={userData.gender}
               onChange={(e) => setUserData((prev) => ({ ...prev, gender: e.target.value }))}
             >
@@ -150,7 +168,7 @@ const MyProfile = () => {
           <p className="font-medium">Birthday:</p>
           {isEdit ? (
             <input
-              className="bg-gray-50 border rounded px-2 py-1"
+              className="bg-gray-50 border rounded px-2 py-1 focus:outline-none"
               value={userData.dob}
               onChange={(e) => setUserData((prev) => ({ ...prev, dob: e.target.value }))}
               type="date"

@@ -35,3 +35,7 @@ https://razorpay.com/docs/payments/payments/test-card-details/
 
 --Dummy CardNumber
 4386 2894 0766 0153
+
+--Email integration
+
+https://app.brevo.com/settings/keys/api

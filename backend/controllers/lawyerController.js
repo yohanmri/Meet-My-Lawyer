@@ -371,6 +371,46 @@ const changePassword = async (req, res) => {
   }
 };
 
+// API to send email to admin from lawyer panel
+const sendEmailToAdmin = async (req, res) => {
+  try {
+    const { lawyerId, subject, message } = req.body;
+
+    if (!subject || !message) {
+      return res.json({ success: false, message: "Subject and message are required" });
+    }
+
+    // Get lawyer details to include in email
+    const lawyer = await lawyerModel.findById(lawyerId).select('name email');
+    
+    if (!lawyer) {
+      return res.json({ success: false, message: "Lawyer not found" });
+    }
+
+    // Import the email sending function
+    const { sendEmailFromLawyer } = await import('../config/simpleEmail.js');
+    
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const emailSent = await sendEmailFromLawyer(
+      adminEmail, 
+      subject, 
+      message, 
+      lawyer.name, 
+      lawyer.email
+    );
+
+    if (emailSent) {
+      res.json({ success: true, message: "Email sent to admin successfully" });
+    } else {
+      res.json({ success: false, message: "Failed to send email. Please try again." });
+    }
+
+  } catch (error) {
+    console.error("Error sending email to admin:", error);
+    res.json({ success: false, message: error.message || "Server error occurred" });
+  }
+};
+
 export {
   changeAvailability,
   lawyerList,
@@ -381,5 +421,6 @@ export {
   lawyerDashboard,
   lawyerProfile,
   updateLawyerProfile,
-  changePassword
+  changePassword,
+  sendEmailToAdmin
 };

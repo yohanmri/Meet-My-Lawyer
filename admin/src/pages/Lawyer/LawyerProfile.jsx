@@ -112,6 +112,12 @@ const LawyerProfile = () => {
         setCrop({ x: 0, y: 0 });
         setZoom(1);
     };
+    const getLawyerImage = (data) => {
+  if (data?.image && data.image.trim() !== '') {
+    return data.image;
+  }
+  return 'https://via.placeholder.com/150/cccccc/666666?text=No+Image';
+}
 
     const updateProfile = async () => {
         try {
@@ -311,15 +317,11 @@ const LawyerProfile = () => {
                         <h3 className='text-lg font-semibold text-gray-700 mb-4'>Profile Photo</h3>
                         <div className='flex flex-col items-center gap-2'>
                             <label htmlFor="profile-img" className='cursor-pointer'>
-                                <img
-                                    src={lawyerImg ? URL.createObjectURL(lawyerImg) : profileData.image}
-                                    className='w-48 h-40 object-cover object-top bg-gray-100 rounded cursor-pointer'
-                                    alt="Profile"
-                                    onError={(e) => {
-                                        // Fallback if image fails to load
-                                        e.target.src = '/default-avatar.png'; // You can add a default avatar image
-                                    }}
-                                />
+                           <img
+  src={lawyerImg ? URL.createObjectURL(lawyerImg) : getLawyerImage(profileData)}
+  className='w-48 h-40 object-cover object-top bg-gray-100 rounded cursor-pointer'
+  alt="Profile"
+/>
                             </label>
                             {isEdit && (
                                 <>
