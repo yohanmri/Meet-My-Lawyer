@@ -3,7 +3,7 @@ import { AppContext } from "../context/AppContext"
 import axios from "axios"
 import { toast } from "react-toastify"
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, CreditCard, XCircle, CheckCircle, ExternalLink, Grid3x3, List } from 'lucide-react'
+import { Calendar, Clock, MapPin, CreditCard, XCircle, CheckCircle, ExternalLink, Grid3x3, List, Navigation } from 'lucide-react'
 
 const MyAppointments = () => {
   const { backendUrl, token, getLawyersData } = useContext(AppContext)
@@ -95,6 +95,15 @@ const MyAppointments = () => {
     }
   }
 
+  // Function to get Google Maps directions URL
+  const getDirectionsUrl = (latitude, longitude) => {
+    if (!latitude || !longitude) {
+      return null
+    }
+    // This will open Google Maps with directions from user's current location to the lawyer's office
+    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+  }
+
   useEffect(() => {
     if (token) {
       getUserAppointments()
@@ -172,13 +181,31 @@ const MyAppointments = () => {
                     <p className="text-gray-600">{item.lawyerData.address?.district || 'N/A'}</p>
                   </div>
                 </div>
+
+                <div className="flex items-start gap-2">
+                  <div className={`w-4 h-4 mt-0.5 flex-shrink-0 ${item.consultationType === 'online' ? 'text-blue-500' : 'text-green-500'}`}>
+                    {item.consultationType === 'online' ? (
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v8a1 1 0 01-1 1h-4.586l-2.707 2.707a1 1 0 01-1.414 0L4.586 13H4a1 1 0 01-1-1V4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Consultation Type</p>
+                    <p className="text-gray-600 capitalize">{item.consultationType || 'N/A'}</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Completed Appointment - Connection Link */}
-              {item.isCompleted && item.lawyerData.online_link && (
+              {/* Completed Online Appointment - Meeting Link */}
+              {item.isCompleted && item.consultationType === 'online' && item.lawyerData.online_link && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
-                  <p className="text-sm font-medium text-green-800 mb-2">Your consultation is ready!</p>
-                  <p className="text-xs text-green-700 mb-3">Click the link below to connect with your lawyer</p>
+                  <p className="text-sm font-medium text-green-800 mb-2">Your online consultation is ready!</p>
+                  <p className="text-xs text-green-700 mb-3">Click the link below to join the meeting with your lawyer</p>
                   <a 
                     href={item.lawyerData.online_link} 
                     target="_blank" 
@@ -186,12 +213,33 @@ const MyAppointments = () => {
                     className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
                   >
                     <ExternalLink size={16} />
-                    Join Consultation
+                    Join Online Meeting
                   </a>
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Completed Onsite Appointment - Directions Link */}
+              {item.isCompleted && item.consultationType === 'onsite' && item.lawyerData.latitude && item.lawyerData.longitude && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
+                  <p className="text-sm font-medium text-green-800 mb-2">Your onsite consultation is confirmed!</p>
+                  <p className="text-xs text-green-700 mb-2">Visit the lawyer at:</p>
+                  <p className="text-sm text-gray-700 mb-3">
+                    {item.lawyerData.address?.street && `${item.lawyerData.address.street}, `}
+                    {item.lawyerData.address?.district}
+                  </p>
+                  <a 
+                    href={getDirectionsUrl(item.lawyerData.latitude, item.lawyerData.longitude)}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    <Navigation size={16} />
+                    Get Directions
+                  </a>
+                </div>
+              )}
+
+              {/* Action Buttons for Pending Appointments */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {!item.cancelled && !item.payment && !item.isCompleted && (
                   <>
@@ -228,6 +276,7 @@ const MyAppointments = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speciality</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
@@ -258,10 +307,19 @@ const MyAppointments = () => {
                 <p className="text-sm text-gray-600">{item.lawyerData.address?.district || 'N/A'}</p>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  item.consultationType === 'online' 
+                    ? 'bg-blue-100 text-blue-700' 
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {item.consultationType === 'online' ? 'Online' : 'Onsite'}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
                 {getStatusBadge(item)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
-                {item.isCompleted && item.lawyerData.online_link ? (
+                {item.isCompleted && item.consultationType === 'online' && item.lawyerData.online_link ? (
                   <a 
                     href={item.lawyerData.online_link} 
                     target="_blank" 
@@ -270,6 +328,16 @@ const MyAppointments = () => {
                   >
                     <ExternalLink size={14} />
                     Join
+                  </a>
+                ) : item.isCompleted && item.consultationType === 'onsite' && item.lawyerData.latitude && item.lawyerData.longitude ? (
+                  <a 
+                    href={getDirectionsUrl(item.lawyerData.latitude, item.lawyerData.longitude)}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
+                  >
+                    <Navigation size={14} />
+                    Directions
                   </a>
                 ) : !item.cancelled && !item.payment && !item.isCompleted ? (
                   <div className="flex gap-2">

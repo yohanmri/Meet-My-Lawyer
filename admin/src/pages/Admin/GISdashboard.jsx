@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Loader2, AlertCircle, Filter, Users, Scale, TrendingUp, Award, MapPinned, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, Filter, Users, Scale, TrendingUp, Award, MapPinned, ZoomIn, ZoomOut, Maximize2, BarChart3, DollarSign, Briefcase } from 'lucide-react';
 
 const GISDashboard = () => {
   const mapRef = useRef(null);
@@ -14,10 +14,12 @@ const GISDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [analysisMode, setAnalysisMode] = useState('none');
   const [filters, setFilters] = useState({
-    province: '',
     district: '',
-    dsd: ''
+    specialty: '',
+    minFee: 0,
+    maxFee: 100000
   });
 
   const lawyersPerPage = 5;
@@ -46,6 +48,11 @@ const GISDashboard = () => {
         
         if (data.features && data.features.length > 0) {
           setFeatures(data.features);
+          
+          // DEBUG: Log district names from GIS
+          console.log('GIS Districts:', [...new Set(data.features.map(f => 
+            f.attributes.DISTRICT || f.attributes.DISTRICT_N || f.attributes.DIS_NAME
+          ))].sort());
           
           let minX = Infinity, maxX = -Infinity;
           let minY = Infinity, maxY = -Infinity;
@@ -79,6 +86,9 @@ const GISDashboard = () => {
           const lawyerData = await lawyerResponse.json();
           if (lawyerData.success && lawyerData.lawyers) {
             setLawyers(lawyerData.lawyers);
+            
+            // DEBUG: Log lawyer districts
+            console.log('Lawyer Districts:', [...new Set(lawyerData.lawyers.map(l => l.district))].sort());
           }
         } catch (lawyerError) {
           console.error('Error fetching lawyers:', lawyerError);
@@ -147,6 +157,39 @@ const GISDashboard = () => {
     }).join(' ');
   };
 
+  // Calculate district-level statistics
+  const calculateDistrictStats = () => {
+    const districtStats = {};
+    
+    lawyers.forEach(lawyer => {
+      const district = lawyer.district;
+      if (!districtStats[district]) {
+        districtStats[district] = {
+          count: 0,
+          totalFees: 0,
+          specialties: {},
+          lawyers: []
+        };
+      }
+      
+      districtStats[district].count++;
+      districtStats[district].totalFees += lawyer.fees || 0;
+      districtStats[district].specialties[lawyer.speciality] = 
+        (districtStats[district].specialties[lawyer.speciality] || 0) + 1;
+      districtStats[district].lawyers.push(lawyer);
+    });
+    
+    Object.keys(districtStats).forEach(district => {
+      districtStats[district].avgFees = 
+        districtStats[district].totalFees / districtStats[district].count;
+    });
+    
+    console.log('District Stats:', districtStats);
+    return districtStats;
+  };
+
+  const districtStats = calculateDistrictStats();
+
   const getColorForFeature = (feature) => {
     const attrs = feature.attributes;
     const province = attrs.PROVINCE_N || attrs.PROVINCE || attrs.PRO_NAME || 
@@ -176,6 +219,71 @@ const GISDashboard = () => {
     return provinceScheme.shades[shadeIndex];
   };
 
+  // Get color based on analysis mode
+  const getAnalysisColor = (feature) => {
+    const attrs = feature.attributes;
+    const gisDistrict = attrs.DISTRICT || attrs.DISTRICT_N || attrs.DIS_NAME || '';
+    
+    // Try to match district names (case-insensitive, partial match)
+    let matchedDistrict = null;
+    Object.keys(districtStats).forEach(lawyerDist => {
+      if (gisDistrict.toLowerCase().includes(lawyerDist.toLowerCase()) ||
+          lawyerDist.toLowerCase().includes(gisDistrict.toLowerCase())) {
+        matchedDistrict = lawyerDist;
+      }
+    });
+    
+    if (analysisMode === 'none') {
+      return getColorForFeature(feature);
+    }
+    
+    const stats = matchedDistrict ? districtStats[matchedDistrict] : null;
+    
+    if (!stats) {
+      return '#e5e7eb';
+    }
+    
+    if (analysisMode === 'density') {
+      const count = stats.count;
+      if (count === 0) return '#fee2e2';
+      if (count < 5) return '#fecaca';
+      if (count < 10) return '#fca5a5';
+      if (count < 20) return '#f87171';
+      if (count < 30) return '#ef4444';
+      return '#dc2626';
+    }
+    
+    if (analysisMode === 'fees') {
+      const avg = stats.avgFees;
+      if (avg < 2000) return '#dbeafe';
+      if (avg < 3000) return '#bfdbfe';
+      if (avg < 4000) return '#93c5fd';
+      if (avg < 5000) return '#60a5fa';
+      if (avg < 6000) return '#3b82f6';
+      return '#2563eb';
+    }
+    
+    if (analysisMode === 'specialty') {
+      const specialtyCount = Object.keys(stats.specialties).length;
+      if (specialtyCount <= 1) return '#fef3c7';
+      if (specialtyCount <= 2) return '#fde68a';
+      if (specialtyCount <= 3) return '#fcd34d';
+      if (specialtyCount <= 4) return '#fbbf24';
+      return '#f59e0b';
+    }
+    
+    if (analysisMode === 'coverage') {
+      const count = stats.count;
+      if (count === 0) return '#fca5a5';
+      if (count < 5) return '#fdba74';
+      if (count < 15) return '#fde047';
+      if (count < 25) return '#86efac';
+      return '#22c55e';
+    }
+    
+    return getColorForFeature(feature);
+  };
+
   const getUniqueDistricts = () => {
     const districts = new Set();
     lawyers.forEach(lawyer => {
@@ -184,29 +292,33 @@ const GISDashboard = () => {
     return Array.from(districts).sort();
   };
 
-  const getUniqueValues = (field) => {
-    const values = new Set();
-    features.forEach(f => {
-      const val = f.attributes[field] || f.attributes[field.toUpperCase()] || 
-                  f.attributes[field.toLowerCase()];
-      if (val) values.add(val);
+  const getUniqueSpecialties = () => {
+    const specialties = new Set();
+    lawyers.forEach(lawyer => {
+      if (lawyer.speciality) specialties.add(lawyer.speciality);
     });
-    return Array.from(values).sort();
+    return Array.from(specialties).sort();
   };
 
-  // Filter lawyers by district
   const filteredLawyers = lawyers.filter(lawyer => {
-    if (filters.district && lawyer.district !== filters.district) {
-      return false;
-    }
+    if (filters.district && lawyer.district !== filters.district) return false;
+    if (filters.specialty && lawyer.speciality !== filters.specialty) return false;
+    if (lawyer.fees < filters.minFee || lawyer.fees > filters.maxFee) return false;
     return true;
-  });
-
-  // Analytics calculations
+  });// Advanced Analytics calculations
   const analytics = {
     totalLawyers: lawyers.length,
     filteredLawyers: filteredLawyers.length,
     averageFees: lawyers.length > 0 ? Math.round(lawyers.reduce((sum, l) => sum + (l.fees || 0), 0) / lawyers.length) : 0,
+    medianFees: (() => {
+      const fees = lawyers.map(l => l.fees || 0).sort((a, b) => a - b);
+      const mid = Math.floor(fees.length / 2);
+      return fees.length % 2 === 0 ? (fees[mid - 1] + fees[mid]) / 2 : fees[mid];
+    })(),
+    feeRange: {
+      min: Math.min(...lawyers.map(l => l.fees || 0)),
+      max: Math.max(...lawyers.map(l => l.fees || 0))
+    },
     topDistrict: lawyers.length > 0 ? Object.entries(
       lawyers.reduce((acc, l) => {
         acc[l.district] = (acc[l.district] || 0) + 1;
@@ -220,7 +332,27 @@ const GISDashboard = () => {
     districtDistribution: lawyers.reduce((acc, l) => {
       acc[l.district] = (acc[l.district] || 0) + 1;
       return acc;
-    }, {})
+    }, {}),
+    underservedDistricts: Object.entries(districtStats)
+      .filter(([_, stats]) => stats.count < 5)
+      .sort((a, b) => a[1].count - b[1].count)
+      .slice(0, 5),
+    districtFeeVariance: Object.entries(districtStats)
+      .map(([district, stats]) => ({
+        district,
+        avgFee: Math.round(stats.avgFees),
+        count: stats.count
+      }))
+      .sort((a, b) => b.avgFee - a.avgFee)
+      .slice(0, 5),
+    specialtyDiversity: Object.entries(districtStats)
+      .map(([district, stats]) => ({
+        district,
+        specialtyCount: Object.keys(stats.specialties).length,
+        lawyerCount: stats.count
+      }))
+      .sort((a, b) => b.specialtyCount - a.specialtyCount)
+      .slice(0, 5)
   };
 
   const indexOfLastLawyer = currentPage * lawyersPerPage;
@@ -242,7 +374,7 @@ const GISDashboard = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-lg">
+        <div className="text-center max-w-md p-6 bg-white -lg shadow-lg">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-gray-800 font-semibold mb-2">Error Loading Map</p>
           <p className="text-gray-600 text-sm">{error}</p>
@@ -259,8 +391,8 @@ const GISDashboard = () => {
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-blue-600" />
               <div>
-                <h1 className="text-lg font-bold text-gray-800">SL DSD Codes</h1>
-                <p className="text-xs text-gray-500">Sri Lankan Divisional Secretariat Divisions</p>
+                <h1 className="text-lg font-bold text-gray-800">Lawyer GIS Analytics</h1>
+                <p className="text-xs text-gray-500">Geographic & Statistical Analysis</p>
               </div>
             </div>
             <div className="text-xs text-gray-600">
@@ -272,11 +404,59 @@ const GISDashboard = () => {
         <div className="flex-1 flex overflow-hidden">
           <div className="w-56 bg-white border-r border-gray-200 p-3 overflow-y-auto flex-shrink-0">
             <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <BarChart3 className="w-3 h-3" />
+              Analysis Mode
+            </h3>
+            
+            <div className="space-y-1 mb-3">
+              <button
+                onClick={() => setAnalysisMode('none')}
+                className={`w-full text-left px-2 py-1.5 text-xs  transition ${
+                  analysisMode === 'none' ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-gray-100'
+                }`}
+              >
+                Standard View
+              </button>
+              <button
+                onClick={() => setAnalysisMode('density')}
+                className={`w-full text-left px-2 py-1.5 text-xs  transition ${
+                  analysisMode === 'density' ? 'bg-red-100 text-red-700 font-medium' : 'hover:bg-gray-100'
+                }`}
+              >
+                Lawyer Density
+              </button>
+              <button
+                onClick={() => setAnalysisMode('fees')}
+                className={`w-full text-left px-2 py-1.5 text-xs  transition ${
+                  analysisMode === 'fees' ? 'bg-blue-100 text-blue-700 font-medium' : 'hover:bg-gray-100'
+                }`}
+              >
+                Fee Distribution
+              </button>
+              <button
+                onClick={() => setAnalysisMode('specialty')}
+                className={`w-full text-left px-2 py-1.5 text-xs  transition ${
+                  analysisMode === 'specialty' ? 'bg-yellow-100 text-yellow-700 font-medium' : 'hover:bg-gray-100'
+                }`}
+              >
+                Specialty Diversity
+              </button>
+              <button
+                onClick={() => setAnalysisMode('coverage')}
+                className={`w-full text-left px-2 py-1.5 text-xs  transition ${
+                  analysisMode === 'coverage' ? 'bg-green-100 text-green-700 font-medium' : 'hover:bg-gray-100'
+                }`}
+              >
+                Service Coverage
+              </button>
+            </div>
+
+            <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2 mt-4 pt-3 border-t">
               <Filter className="w-3 h-3" />
               Filters
             </h3>
             
-            <div className="mb-3 p-2 bg-gray-50 rounded">
+            <div className="mb-3 p-2 bg-gray-50 ">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -285,7 +465,7 @@ const GISDashboard = () => {
                   className="w-3 h-3 text-blue-600"
                 />
                 <Scale className="w-3 h-3 text-gray-600" />
-                <span className="text-xs font-medium">Show Lawyers</span>
+                <span className="text-xs font-medium">Show Markers</span>
               </label>
             </div>
 
@@ -294,7 +474,7 @@ const GISDashboard = () => {
               <select
                 value={filters.district}
                 onChange={(e) => setFilters({...filters, district: e.target.value})}
-                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-xs border border-gray-300  focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">All Districts</option>
                 {getUniqueDistricts().map(dist => (
@@ -303,9 +483,38 @@ const GISDashboard = () => {
               </select>
             </div>
 
+            <div className="mb-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Specialty</label>
+              <select
+                value={filters.specialty}
+                onChange={(e) => setFilters({...filters, specialty: e.target.value})}
+                className="w-full px-2 py-1.5 text-xs border border-gray-300  focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All Specialties</option>
+                {getUniqueSpecialties().map(spec => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Fee Range (Rs. {filters.minFee} - {filters.maxFee})
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="100000"
+                step="1000"
+                value={filters.maxFee}
+                onChange={(e) => setFilters({...filters, maxFee: parseInt(e.target.value)})}
+                className="w-full"
+              />
+            </div>
+
             <button
-              onClick={() => setFilters({ province: '', district: '', dsd: '' })}
-              className="w-full px-2 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition mb-3"
+              onClick={() => setFilters({ district: '', specialty: '', minFee: 0, maxFee: 100000 })}
+              className="w-full px-2 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700  transition mb-3"
             >
               Clear Filters
             </button>
@@ -315,22 +524,19 @@ const GISDashboard = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.2))}
-                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
-                  title="Zoom In"
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700  flex items-center justify-center gap-1"
                 >
                   <ZoomIn className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.2))}
-                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
-                  title="Zoom Out"
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700  flex items-center justify-center gap-1"
                 >
                   <ZoomOut className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }}
-                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-1"
-                  title="Reset View"
+                  className="flex-1 px-2 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700  flex items-center justify-center gap-1"
                 >
                   <Maximize2 className="w-3 h-3" />
                 </button>
@@ -352,7 +558,7 @@ const GISDashboard = () => {
                 if (!feature.geometry || !feature.geometry.rings) return null;
                 
                 const path = generatePath(feature.geometry.rings);
-                const color = getColorForFeature(feature);
+                const color = getAnalysisColor(feature);
                 const isSelected = selectedFeature === idx;
                 
                 return (
@@ -402,8 +608,85 @@ const GISDashboard = () => {
               })}
             </svg>
 
+            {analysisMode !== 'none' && (
+              <div className="absolute bottom-4 right-4 bg-white p-3 -lg shadow-lg border z-10">
+                <h4 className="font-semibold text-xs mb-2">
+                  {analysisMode === 'density' && 'Lawyer Density'}
+                  {analysisMode === 'fees' && 'Average Fees'}
+                  {analysisMode === 'specialty' && 'Specialty Diversity'}
+                  {analysisMode === 'coverage' && 'Service Coverage'}
+                </h4>
+                <div className="space-y-1 text-xs">
+                  {analysisMode === 'density' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#dc2626'}}></div>
+                        <span>30+ lawyers</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#f87171'}}></div>
+                        <span>10-20 lawyers</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#fecaca'}}></div>
+                        <span>&lt;5 lawyers</span>
+                      </div>
+                    </>
+                  )}
+                  {analysisMode === 'fees' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#2563eb'}}></div>
+                        <span>&gt;Rs.6000</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#60a5fa'}}></div>
+                        <span>Rs.4000-5000</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#dbeafe'}}></div>
+                        <span>&lt;Rs.2000</span>
+                      </div>
+                    </>
+                  )}
+                  {analysisMode === 'specialty' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#f59e0b'}}></div>
+                        <span>5+ specialties</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#fcd34d'}}></div>
+                        <span>2-3 specialties</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#fef3c7'}}></div>
+                        <span>1 specialty</span>
+                      </div>
+                    </>
+                  )}
+                  {analysisMode === 'coverage' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#22c55e'}}></div>
+                        <span>Excellent (25+)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#fde047'}}></div>
+                        <span>Moderate (5-15)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 " style={{backgroundColor: '#fca5a5'}}></div>
+                        <span>Poor (0-5)</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {selectedFeature !== null && features[selectedFeature] && (
-              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 max-w-xs z-10">
+              <div className="absolute top-4 left-4 bg-white -lg shadow-lg p-3 max-w-xs z-10">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-sm text-gray-800">DSD Details</h3>
                   <button 
@@ -425,7 +708,7 @@ const GISDashboard = () => {
             )}
 
             {selectedLawyer && (
-              <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl p-4 w-72 z-10">
+              <div className="absolute top-4 right-4 bg-white -lg shadow-xl p-4 w-72 z-10">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-semibold text-sm text-gray-800">Lawyer Details</h3>
                   <button 
@@ -440,10 +723,10 @@ const GISDashboard = () => {
                     <img 
                       src={selectedLawyer.image} 
                       alt={selectedLawyer.name}
-                      className="w-16 h-16 rounded-lg object-cover border-2 border-gray-200"
+                      className="w-16 h-16 -lg object-cover border-2 border-gray-200"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
+                    <div className="w-16 h-16 -lg bg-gray-200 flex items-center justify-center">
                       <Users className="w-8 h-8 text-gray-400" />
                     </div>
                   )}
@@ -483,28 +766,85 @@ const GISDashboard = () => {
         <div className="p-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
-            Analytics Dashboard
+            Advanced Analytics
           </h2>
+          
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="bg-blue-50 p-2 rounded-lg">
+            <div className="bg-blue-50 p-2 -lg">
               <p className="text-xl font-bold text-blue-600">{analytics.totalLawyers}</p>
-              <p className="text-xs text-gray-600">Total</p>
+              <p className="text-xs text-gray-600">Total Lawyers</p>
             </div>
-            <div className="bg-green-50 p-2 rounded-lg">
+            <div className="bg-green-50 p-2 -lg">
               <p className="text-xl font-bold text-green-600">{analytics.filteredLawyers}</p>
               <p className="text-xs text-gray-600">Filtered</p>
             </div>
-            <div className="bg-purple-50 p-2 rounded-lg">
+            <div className="bg-purple-50 p-2 -lg">
               <p className="text-lg font-bold text-purple-600">Rs.{analytics.averageFees}</p>
               <p className="text-xs text-gray-600">Avg. Fees</p>
             </div>
-            <div className="bg-orange-50 p-2 rounded-lg">
-              <p className="text-lg font-bold text-orange-600">{analytics.topDistrict[1]}</p>
-              <p className="text-xs text-gray-600 truncate">{analytics.topDistrict[0]}</p>
+            <div className="bg-orange-50 p-2 -lg">
+              <p className="text-lg font-bold text-orange-600">Rs.{Math.round(analytics.medianFees)}</p>
+              <p className="text-xs text-gray-600">Median Fees</p>
             </div>
           </div>
 
-          <div className="bg-gray-50 p-2 rounded-lg mb-2">
+          <div className="bg-gray-50 p-2 -lg mb-2">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <DollarSign className="w-3 h-3" />
+              Fee Range
+            </h4>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-600">Min: Rs.{analytics.feeRange.min}</span>
+              <span className="text-gray-600">Max: Rs.{analytics.feeRange.max}</span>
+            </div>
+          </div>
+
+          <div className="bg-red-50 p-2 -lg mb-2 border border-red-200">
+            <h4 className="text-xs font-semibold text-red-700 mb-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Coverage Gaps
+            </h4>
+            <div className="space-y-1">
+              {analytics.underservedDistricts.slice(0, 3).map(([district, stats]) => (
+                <div key={district} className="flex justify-between text-xs">
+                  <span className="text-gray-700 truncate">{district}</span>
+                  <span className="text-red-600 font-semibold">{stats.count} lawyers</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-2 -lg mb-2">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <DollarSign className="w-3 h-3" />
+              Highest Fee Districts
+            </h4>
+            <div className="space-y-1">
+              {analytics.districtFeeVariance.map(({district, avgFee}) => (
+                <div key={district} className="flex justify-between text-xs">
+                  <span className="text-gray-600 truncate">{district}</span>
+                  <span className="text-gray-800 font-semibold">Rs.{avgFee}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-2 -lg mb-2">
+            <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <Briefcase className="w-3 h-3" />
+              Specialty Diversity Leaders
+            </h4>
+            <div className="space-y-1">
+              {analytics.specialtyDiversity.map(({district, specialtyCount}) => (
+                <div key={district} className="flex justify-between text-xs">
+                  <span className="text-gray-600 truncate">{district}</span>
+                  <span className="text-gray-800 font-semibold">{specialtyCount} types</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-2 -lg mb-2">
             <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
               <Award className="w-3 h-3" />
               Top Specialties
@@ -512,7 +852,7 @@ const GISDashboard = () => {
             <div className="space-y-1">
               {Object.entries(analytics.specialtyDistribution)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 3)
+                .slice(0, 5)
                 .map(([specialty, count]) => (
                   <div key={specialty} className="flex justify-between text-xs">
                     <span className="text-gray-600 truncate">{specialty}</span>
@@ -522,7 +862,7 @@ const GISDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-gray-50 p-2 rounded-lg">
+          <div className="bg-gray-50 p-2 -lg">
             <h4 className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
               <MapPinned className="w-3 h-3" />
               District Distribution
@@ -550,15 +890,15 @@ const GISDashboard = () => {
             {currentLawyers.length > 0 ? (
               <div className="space-y-2">
                 {currentLawyers.map((lawyer) => (
-                  <div key={lawyer._id} className="p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition flex gap-2">
+                  <div key={lawyer._id} className="p-2 bg-gray-50 -lg border border-gray-200 hover:bg-gray-100 transition flex gap-2">
                     {lawyer.image ? (
                       <img 
                         src={lawyer.image} 
                         alt={lawyer.name}
-                        className="w-12 h-12 rounded object-cover border border-gray-300 flex-shrink-0"
+                        className="w-12 h-12  object-cover border border-gray-300 flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12  bg-gray-200 flex items-center justify-center flex-shrink-0">
                         <Users className="w-6 h-6 text-gray-400" />
                       </div>
                     )}
@@ -582,7 +922,7 @@ const GISDashboard = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed "
                 >
                   Previous
                 </button>
@@ -592,7 +932,7 @@ const GISDashboard = () => {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                  className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed "
                 >
                   Next
                 </button>

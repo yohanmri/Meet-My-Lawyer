@@ -21,18 +21,31 @@ const Lawyers = () => {
 
   // Legal specialties based on the admin form
   const specialties = [
-    'Corporate Law',
-    'Criminal Law',
-    'Family Law',
-    'Civil Law',
-    'Commercial Law',
-    'Constitutional Law',
-    'Labor Law',
-    'Immigration Law',
-    'Real Estate Law',
-    'Tax Law',
-    'Environmental Law',
-    'Intellectual Property Law'
+   'Criminal Law',
+            'Civil Law',
+            'Family Law',
+            'Corporate Law',
+            'Immigration Law',
+            'Property Law',
+            'General Practice',
+            'Constitutional Law',
+            'Labour Law',
+            'Intellectual Property Law',
+            'Tax Law',
+            'Administrative Law',
+            'Environmental Law',
+            'Human Rights Law',
+            'International Law',
+            'Commercial Law',
+            'Insurance Law',
+            'Banking and Finance Law',
+            'Maritime Law',
+            'Cyber Law',
+            'Medical Law',
+            'Consumer Law',
+            'Education Law',
+            'Transport Law',
+            'Entertainment Law'
   ]
 
   // Districts for filtering with coordinates

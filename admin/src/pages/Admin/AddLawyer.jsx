@@ -472,13 +472,32 @@ export default function LawyerRegistrationForm() {
                                             value={speciality}
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                                         >
-                                            <option value="Criminal Law">Criminal Law</option>
-                                            <option value="Civil Law">Civil Law</option>
-                                            <option value="Family Law">Family Law</option>
-                                            <option value="Corporate Law">Corporate Law</option>
-                                            <option value="Immigration Law">Immigration Law</option>
-                                            <option value="Property Law">Property Law</option>
-                                            <option value="General Practice">General Practice</option>
+                                        <option value="Criminal Law">Criminal Law</option>
+                                        <option value="Civil Law">Civil Law</option>
+                                        <option value="Family Law">Family Law</option>
+                                        <option value="Corporate Law">Corporate Law</option>
+                                        <option value="Immigration Law">Immigration Law</option>
+                                        <option value="Property Law">Property Law</option>
+                                        <option value="General Practice">General Practice</option>
+                                        <option value="Constitutional Law">Constitutional Law</option>
+                                        <option value="Labour Law">Labour Law</option>
+                                        <option value="Intellectual Property Law">Intellectual Property Law</option>
+                                        <option value="Tax Law">Tax Law</option>
+                                        <option value="Administrative Law">Administrative Law</option>
+                                        <option value="Environmental Law">Environmental Law</option>
+                                        <option value="Human Rights Law">Human Rights Law</option>
+                                        <option value="International Law">International Law</option>
+                                        <option value="Commercial Law">Commercial Law</option>
+                                        <option value="Insurance Law">Insurance Law</option>
+                                        <option value="Banking and Finance Law">Banking and Finance Law</option>
+                                        <option value="Maritime Law">Maritime Law</option>
+                                        <option value="Cyber Law">Cyber Law</option>
+                                        <option value="Medical Law">Medical Law</option>
+                                        <option value="Consumer Law">Consumer Law</option>
+                                        <option value="Education Law">Education Law</option>
+                                        <option value="Transport Law">Transport Law</option>
+                                        <option value="Entertainment Law">Entertainment Law</option>
+
                                         </select>
                                     </div>
                                     <div className='w-full'>
@@ -569,20 +588,33 @@ export default function LawyerRegistrationForm() {
                             <div className='bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex-1'>
                                 <h3 className='text-lg font-semibold text-[#515151] mb-4'>Courts</h3>
                                 <div className='grid grid-cols-1 gap-3'>
-                                    <div className='w-full'>
-                                        <p className='text-[#515151] text-sm mb-1'>
-                                            Primary Court <span className="text-red-500">*</span>
-                                        </p>
-                                        <input
-                                            type="text"
-                                            placeholder='Primary Court'
-                                            className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                                            value={primaryCourt}
-                                            onChange={(e) => setPrimaryCourt(e.target.value)}
-                                        />
-                                    </div>
+                                                    <div className='w-full'>
+                                                    <p className='text-[#515151] text-sm mb-1'>
+                                                        Court <span className="text-red-500">*</span>
+                                                    </p>
+                                                    <select
+                                                        className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                                                        value={primaryCourt}
+                                                        onChange={(e) => setPrimaryCourt(e.target.value)}
+                                                    >
+                                                        <option value="">Select Court</option>
+                                                        <option value="Supreme Court">Supreme Court</option>
+                                                        <option value="Court of Appeal">Court of Appeal</option>
+                                                        <option value="High Court">High Court</option>
+                                                        <option value="Commercial High Court">Commercial High Court</option>
+                                                        <option value="District Court">District Court</option>
+                                                        <option value="Magistrate’s Court">Magistrate’s Court</option>
+                                                        <option value="Primary Court">Primary Court</option>
+                                                        <option value="Labour Tribunal">Labour Tribunal</option>
+                                                        <option value="Juvenile Court">Juvenile Court</option>
+                                                        <option value="Military Court">Military Court</option>
+                                                        <option value="Environmental Tribunal">Environmental Tribunal</option>
+                                                        <option value="Tax Appeals Commission">Tax Appeals Commission</option>
+                                                    </select>
+                                                    </div>
 
-                                    <div className='w-full'>
+
+                                    {/* <div className='w-full'>
                                         <p className='text-[#515151] text-sm mb-1'>Consultation Method</p>
                                         <select
                                             className='border border-gray-300 rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
@@ -593,7 +625,7 @@ export default function LawyerRegistrationForm() {
                                             <option value="online">Online</option>
                                             <option value="both">Online & Onsite</option>
                                         </select>
-                                    </div>
+                                    </div> */}
 
                                     <div className='w-full'>
                                         <p className='text-[#515151] text-sm mb-1'>Online Meeting Link (Optional)</p>

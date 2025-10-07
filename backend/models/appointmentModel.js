@@ -11,7 +11,8 @@ const appointmentSchema = new mongoose.Schema({
     date: { type: Number, required: true },
     cancelled: { type: Boolean, default: false },
     payment: { type: Boolean, default: false },
-    isCompleted: { type: Boolean, default: false }
+    isCompleted: { type: Boolean, default: false },
+    consultationType: { type: String, default: 'online' } 
 })
 
 const appointmentModel = mongoose.models.appointment || mongoose.model('appointment', appointmentSchema)

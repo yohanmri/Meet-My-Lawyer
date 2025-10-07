@@ -124,24 +124,24 @@ const updateProfile = async (req, res) => {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
-};
-//API to book appointment
+};//API to book appointment
 
 const bookAppointment = async (req, res) => {
   try {
-    const { userId, lawyerId, slotDate, slotTime } = req.body
+    const { userId, lawyerId, slotDate, slotTime, consultationType } = req.body  // ADD consultationType here
 
-const lawyerData = await lawyerModel.findById(lawyerId).select('-password')
+    const lawyerData = await lawyerModel.findById(lawyerId).select('-password')
 
-// Check if lawyer exists first
-if (!lawyerData) {
-  return res.json({ success: false, message: 'Lawyer not found' })
-}
+    // Check if lawyer exists first
+    if (!lawyerData) {
+      return res.json({ success: false, message: 'Lawyer not found' })
+    }
 
-// Then check availability
-if (!lawyerData.available) {
-  return res.json({ success: false, message: 'Lawyer not available' })
-}
+    // Then check availability
+    if (!lawyerData.available) {
+      return res.json({ success: false, message: 'Lawyer not available' })
+    }
+    
     let slots_booked = lawyerData.slots_booked
 
     // Checking for slots availability
@@ -169,6 +169,7 @@ if (!lawyerData.available) {
       amount: lawyerData.fees,
       slotTime,
       slotDate,
+      consultationType,  // ADD this line
       date: Date.now()
     }
 
@@ -186,7 +187,6 @@ if (!lawyerData.available) {
     res.json({ success: false, message: error.message });
   }
 }
-
 
 //API to get user appointments for frontend  my_appointments page
 
@@ -302,4 +302,19 @@ const verifyRazorpay = async (req, res) => {
   }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay };
+// API to get all users with location data for GIS dashboard
+const getUsersForGIS = async (req, res) => {
+  try {
+    const users = await userModel.find({
+      latitude: { $exists: true, $ne: null },
+      longitude: { $exists: true, $ne: null }
+    }).select('name email district latitude longitude address');
+
+    res.json({ success: true, users });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay, getUsersForGIS  };

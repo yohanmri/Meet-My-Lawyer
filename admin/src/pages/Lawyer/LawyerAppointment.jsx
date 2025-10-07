@@ -89,20 +89,22 @@ const LawyerAppointment = () => {
             </div>
 
             <div className='bg-white border rounded text-sm max-h-[80vh] min-h-[50vh] overflow-y-scroll'>
-                <div className='max-sm:hidden grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 py-3 px-6 border-b'>
-                    <p>#</p>
-                    <p>Client</p>
-                    <p>Payment Status</p>
-                    <p>Age</p>
-                    <p>Date & Time</p>
-                    <p>Fees</p>
-                    <p>Action</p>
-                </div>
+<div className='max-sm:hidden grid grid-cols-[0.5fr_2fr_1fr_1fr_2fr_1fr_1fr_1fr] gap-1 py-3 px-6 border-b'>
+    <p>#</p>
+    <p>Client</p>
+    <p>Payment Status</p>
+    <p>Age</p>
+    <p>Date & Time</p>
+    <p>Type</p>
+    <p>Fees</p>
+    <p>Action</p>
+</div>
 
-                {currentAppointments.slice().reverse().map((item, index) => (<div
-                    className='flex flex-wrap justify-between max-sm:gap-5 max-sm:text-base sm:grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50'
-                    key={index}
-                >
+                {currentAppointments.slice().reverse().map((item, index) => (
+<div
+    className='flex flex-wrap justify-between max-sm:gap-5 max-sm:text-base sm:grid grid-cols-[0.5fr_2fr_1fr_1fr_2fr_1fr_1fr_1fr] gap-1 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50'
+    key={index}
+>
                     <p className='max-sm:hidden'>{index + 1}</p>
                     <div className='flex items-center gap-2'>
                         <img className='w-8 h-8 rounded-full object-cover' src={item.userData.image} alt='' />
@@ -117,8 +119,31 @@ const LawyerAppointment = () => {
                         </p>
                     </div>
                     <p className='max-sm:hidden'>{calculateAge(item.userData.dob)}</p>
-                    <p>{slotDateFormat(item.slotDate)} | {item.slotTime}</p>
-                    <p>{currency} {item.amount}</p>
+<p>{slotDateFormat(item.slotDate)} | {item.slotTime}</p>
+<div>
+    <span className={`text-xs inline-flex items-center gap-1 px-2 py-1 rounded-full ${
+        item.consultationType === 'online' 
+            ? 'bg-blue-100 text-blue-700' 
+            : 'bg-green-100 text-green-700'
+    }`}>
+        {item.consultationType === 'online' ? (
+            <>
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v8a1 1 0 01-1 1h-4.586l-2.707 2.707a1 1 0 01-1.414 0L4.586 13H4a1 1 0 01-1-1V4z" clipRule="evenodd" />
+                </svg>
+                Online
+            </>
+        ) : (
+            <>
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                Onsite
+            </>
+        )}
+    </span>
+</div>
+<p>{currency} {item.amount}</p>
 
                     {item.cancelled ? (
                         <p className='text-red-400 text-xs font-medium flex items-center gap-1'>
