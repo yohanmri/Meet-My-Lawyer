@@ -62,6 +62,31 @@ const LawyerContextProvider = (props) => {
         }
     }
 
+
+const updateOnlineLink = async (onlineLink) => {
+    try {
+        const { data } = await axios.post(
+            backendUrl + '/api/lawyer/update-online-link',
+            { online_link: onlineLink },
+            { headers: { dToken } }
+        );
+
+        if (data.success) {
+            toast.success(data.message);
+            // Update profile data locally
+            setProfileData(prev => ({ ...prev, online_link: onlineLink }));
+            return true;
+        } else {
+            toast.error(data.message);
+            return false;
+        }
+    } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to update link");
+        console.error("Update link error:", error);
+        return false;
+    }
+};
+
     const getDashData = async () => {
         try {
             const { data } = await axios.get(backendUrl + '/api/lawyer/dashboard', { headers: { dToken } })
@@ -120,7 +145,7 @@ const LawyerContextProvider = (props) => {
         completeAppointment, cancelAppointment,
         dashData, setDashData, getDashData,
         profileData, setProfileData,
-        getProfileData,  sendEmailToAdmin 
+        getProfileData,  sendEmailToAdmin ,updateOnlineLink
     }
     
     return (
@@ -129,5 +154,7 @@ const LawyerContextProvider = (props) => {
         </LawyerContext.Provider>
     )
 }
+
+
 
 export default LawyerContextProvider

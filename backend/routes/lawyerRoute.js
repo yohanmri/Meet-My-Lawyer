@@ -12,7 +12,7 @@ import {
 } from "../controllers/lawyerController.js";
 import authLawyer from "../middlewares/authLawyer.js";
 import { sendEmailToAdmin } from "../controllers/lawyerController.js";
-
+import { updateOnlineLink } from '../controllers/lawyerController.js';
 const lawyerRouter = express.Router();
 
 // Configure multer for image upload
@@ -37,5 +37,6 @@ lawyerRouter.get('/dashboard', authLawyer, lawyerDashboard);
 lawyerRouter.get('/profile', authLawyer, lawyerProfile);
 lawyerRouter.post('/update-profile', authLawyer, upload.single('image'), updateLawyerProfile);
 lawyerRouter.post('/send-email-to-admin', authLawyer, sendEmailToAdmin);
+lawyerRouter.post('/update-online-link', authLawyer, updateOnlineLink);
 
 export default lawyerRouter;

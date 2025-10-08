@@ -203,3 +203,55 @@ export const sendEmailFromLawyer = async (adminEmail, subject, messageContent, l
     return false;
   }
 };
+
+
+export const sendOTPEmail = async (recipientEmail, otp) => {
+  console.log('Sending OTP email to:', recipientEmail);
+  
+  let sendSmtpEmail = new brevo.SendSmtpEmail();
+  
+  sendSmtpEmail.subject = "MML - Email Verification Code";
+  sendSmtpEmail.htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #6A0610; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">Meet My Lawyer</h1>
+      </div>
+      <div style="padding: 30px; background-color: #f9f9f9;">
+        <h2 style="color: #333;">Email Verification</h2>
+        <p style="font-size: 16px; color: #555;">
+          Your verification code for lawyer registration is:
+        </p>
+        <div style="background-color: #fff; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; border: 2px dashed #6A0610;">
+          <h1 style="color: #6A0610; font-size: 36px; margin: 0; letter-spacing: 8px;">${otp}</h1>
+        </div>
+        <p style="font-size: 14px; color: #666;">
+          This code will expire in 10 minutes.
+        </p>
+        <p style="color: #d9534f; font-size: 14px;">
+          <strong>Important:</strong> If you didn't request this code, please ignore this email.
+        </p>
+      </div>
+      <div style="background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+        <p>This is an automated message from Meet My Lawyer</p>
+      </div>
+    </div>
+  `;
+  
+  sendSmtpEmail.sender = { 
+    name: "MML Team", 
+    email: process.env.EMAIL_USER || "noreply@mml.com" 
+  };
+  sendSmtpEmail.to = [
+    { email: recipientEmail }
+  ];
+  
+  try {
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('✅ OTP email sent successfully to:', recipientEmail);
+    return true;
+  } catch (error) {
+    console.error('❌ Error sending OTP email:', error.response?.body || error.message);
+    console.log('OTP Code:', otp); // Fallback log
+    return false;
+  }
+};

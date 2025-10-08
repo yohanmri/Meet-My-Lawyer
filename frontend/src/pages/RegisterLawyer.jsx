@@ -4,6 +4,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 const RegisterLawyer = () => {
+
+    // OTP part state variables
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [otpValue, setOtpValue] = useState('');
+    const [isSendingOTP, setIsSendingOTP] = useState(false);
+    const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
+
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -282,6 +290,174 @@ const RegisterLawyer = () => {
         }
 
         return true;
+    };
+
+    // OTP FUNCTIONS - ADDED HERE
+    const handleSendOTP = async () => {
+        if (!formData.application_email) {
+            toast.error('Please enter your email address first');
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.application_email)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+
+        try {
+            setIsSendingOTP(true);
+            const response = await axios.post(`${backendUrl}/api/application/send-otp`, {
+                email: formData.application_email
+            });
+
+            if (response.data.success) {
+                setOtpSent(true);
+                toast.success('OTP sent to your email!');
+            } else {
+                toast.error(response.data.message || 'Failed to send OTP');
+            }
+        } catch (error) {
+            console.error('OTP send error:', error);
+            toast.error('Failed to send OTP. Please try again.');
+        } finally {
+            setIsSendingOTP(false);
+        }
+    };
+
+    const handleVerifyOTP = async () => {
+        if (!otpValue || otpValue.length !== 6) {
+            toast.error('Please enter a valid 6-digit OTP');
+            return;
+        }
+
+        try {
+            setIsVerifyingOTP(true);
+            const response = await axios.post(`${backendUrl}/api/application/verify-otp`, {
+                email: formData.application_email,
+                otp: otpValue
+            });
+
+            if (response.data.success) {
+                setOtpVerified(true);
+                toast.success('Email verified successfully!');
+            } else {
+                toast.error(response.data.message || 'Invalid OTP');
+            }
+        } catch (error) {
+            console.error('OTP verification error:', error);
+            toast.error('Failed to verify OTP. Please try again.');
+        } finally {
+            setIsVerifyingOTP(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            setIsSubmitting(true);
+
+            // Validate form
+            if (!validateForm()) {
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Create FormData for file uploads
+            const submitData = new FormData();
+
+            // Add text fields
+            submitData.append('application_name', formData.application_name);
+            submitData.append('application_email', formData.application_email);
+            submitData.append('application_password', formData.application_password);
+            submitData.append('application_phone', formData.application_phone);
+            submitData.append('application_office_phone', formData.application_office_phone);
+            submitData.append('application_speciality', formData.application_speciality);
+            submitData.append('application_gender', formData.application_gender);
+            submitData.append('application_dob', formData.application_dob);
+            submitData.append('application_degree', JSON.stringify(formData.application_degree));
+            submitData.append('application_district', formData.application_district);
+            submitData.append('application_license_number', formData.application_license_number);
+            submitData.append('application_bar_association', formData.application_bar_association);
+            submitData.append('application_experience', formData.application_experience);
+            submitData.append('application_languages_spoken', JSON.stringify(formData.application_languages_spoken));
+            submitData.append('application_about', formData.application_about);
+            submitData.append('application_legal_professionals', JSON.stringify(formData.application_legal_professionals));
+            submitData.append('application_fees', formData.application_fees);
+            submitData.append('application_address', JSON.stringify(formData.application_address));
+            submitData.append('application_latitude', formData.application_latitude);
+            submitData.append('application_longitude', formData.application_longitude);
+            submitData.append('application_court1', formData.application_court1);
+            submitData.append('application_court2', formData.application_court2);
+
+            // Add files
+            if (formData.application_image) {
+                submitData.append('application_image', formData.application_image);
+            }
+            if (formData.application_license_certificate) {
+                submitData.append('application_license_certificate', formData.application_license_certificate);
+            }
+            if (formData.application_birth_certificate) {
+                submitData.append('application_birth_certificate', formData.application_birth_certificate);
+            }
+            if (formData.application_legal_professionals_certificate.length > 0) {
+                formData.application_legal_professionals_certificate.forEach((file) => {
+                    submitData.append('application_legal_professionals_certificate', file);
+                });
+            }
+
+            // Submit to backend
+            const response = await axios.post(`${backendUrl}/api/application/add-application`, submitData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data.success) {
+                toast.success('Application submitted successfully! You will be notified once it\'s reviewed.');
+
+                // Reset form
+                setFormData({
+                    application_name: '',
+                    application_email: '',
+                    application_password: '',
+                    application_phone: '',
+                    application_office_phone: '',
+                    application_speciality: '',
+                    application_gender: '',
+                    application_dob: '',
+                    application_degree: [],
+                    application_district: '',
+                    application_license_number: '',
+                    application_bar_association: '',
+                    application_experience: '',
+                    application_languages_spoken: [],
+                    application_about: '',
+                    application_legal_professionals: [],
+                    application_fees: 0,
+                    application_address: {},
+                    application_latitude: 0,
+                    application_longitude: 0,
+                    application_court1: '',
+                    application_court2: '',
+                    application_image: null,
+                    application_license_certificate: null,
+                    application_birth_certificate: null,
+                    application_legal_professionals_certificate: []
+                });
+                setPasswordConfirm('');
+                setCurrentStep(0);
+                // Reset OTP states
+                setOtpSent(false);
+                setOtpVerified(false);
+                setOtpValue('');
+            } else {
+                toast.error(response.data.message || 'Failed to submit application');
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            toast.error(error.response?.data?.message || 'Network error. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const renderStepIndicator = () => (
@@ -806,6 +982,63 @@ const RegisterLawyer = () => {
                     Once submitted, your application will be reviewed by our admin team. Please ensure all information is accurate before proceeding.
                 </p>
             </div>
+
+            {/* OTP Verification Section */}
+            <div className="mt-6 border border-blue-200 rounded-lg p-6 bg-blue-50">
+                <h4 className="font-medium text-blue-800 mb-4">Email Verification Required</h4>
+                
+                {!otpSent ? (
+                    <div>
+                        <p className="text-sm text-blue-700 mb-4">
+                            Please verify your email address before submitting the application.
+                        </p>
+                        <button
+                            onClick={handleSendOTP}
+                            disabled={isSendingOTP}
+                           className="w-full px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSendingOTP ? 'Sending OTP...' : 'Send OTP to Email'}
+                        </button>
+                    </div>
+                ) : !otpVerified ? (
+                    <div className="space-y-4">
+                        <p className="text-sm text-blue-700">
+                            Enter the 6-digit code sent to <strong>{formData.application_email}</strong>
+                        </p>
+                        <input
+                            type="text"
+                            maxLength="6"
+                            value={otpValue}
+                            onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ''))}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-md text-center text-2xl tracking-widest font-mono"
+                            placeholder="000000"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleVerifyOTP}
+                                disabled={isVerifyingOTP || otpValue.length !== 6}
+                                className="flex-1 px-6 py-3 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isVerifyingOTP ? 'Verifying...' : 'Verify OTP'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setOtpSent(false);
+                                    setOtpValue('');
+                                }}
+                                className="px-6 py-3 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 transition-all duration-200"
+                            >
+                                Resend OTP
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-center">
+                        <p className="text-green-700 font-medium mb-2">✓ Email Verified Successfully!</p>
+                        <p className="text-sm text-green-600">You can now submit your application.</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 
@@ -819,111 +1052,6 @@ const RegisterLawyer = () => {
             case 5: return renderDocuments();
             case 6: return renderReview();
             default: return renderPersonalInfo();
-        }
-    };
-
-    const handleSubmit = async () => {
-        try {
-            setIsSubmitting(true);
-
-            // Validate form
-            if (!validateForm()) {
-                setIsSubmitting(false);
-                return;
-            }
-
-            // Create FormData for file uploads
-            const submitData = new FormData();
-
-            // Add text fields
-            submitData.append('application_name', formData.application_name);
-            submitData.append('application_email', formData.application_email);
-            submitData.append('application_password', formData.application_password);
-            submitData.append('application_phone', formData.application_phone);
-            submitData.append('application_office_phone', formData.application_office_phone);
-            submitData.append('application_speciality', formData.application_speciality);
-            submitData.append('application_gender', formData.application_gender);
-            submitData.append('application_dob', formData.application_dob);
-            submitData.append('application_degree', JSON.stringify(formData.application_degree));
-            submitData.append('application_district', formData.application_district);
-            submitData.append('application_license_number', formData.application_license_number);
-            submitData.append('application_bar_association', formData.application_bar_association);
-            submitData.append('application_experience', formData.application_experience);
-            submitData.append('application_languages_spoken', JSON.stringify(formData.application_languages_spoken));
-            submitData.append('application_about', formData.application_about);
-            submitData.append('application_legal_professionals', JSON.stringify(formData.application_legal_professionals));
-            submitData.append('application_fees', formData.application_fees);
-            submitData.append('application_address', JSON.stringify(formData.application_address));
-            submitData.append('application_latitude', formData.application_latitude);
-            submitData.append('application_longitude', formData.application_longitude);
-            submitData.append('application_court1', formData.application_court1);
-            submitData.append('application_court2', formData.application_court2);
-
-            // Add files
-            if (formData.application_image) {
-                submitData.append('application_image', formData.application_image);
-            }
-            if (formData.application_license_certificate) {
-                submitData.append('application_license_certificate', formData.application_license_certificate);
-            }
-            if (formData.application_birth_certificate) {
-                submitData.append('application_birth_certificate', formData.application_birth_certificate);
-            }
-            if (formData.application_legal_professionals_certificate.length > 0) {
-                formData.application_legal_professionals_certificate.forEach((file) => {
-                    submitData.append('application_legal_professionals_certificate', file);
-                });
-            }
-
-            // Submit to backend
-            const response = await axios.post(`${backendUrl}/api/application/add-application`, submitData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            if (response.data.success) {
-                toast.success('Application submitted successfully! You will be notified once it\'s reviewed.');
-
-                // Reset form
-                setFormData({
-                    application_name: '',
-                    application_email: '',
-                    application_password: '',
-                    application_phone: '',
-                    application_office_phone: '',
-                    application_speciality: '',
-                    application_gender: '',
-                    application_dob: '',
-                    application_degree: [],
-                    application_district: '',
-                    application_license_number: '',
-                    application_bar_association: '',
-                    application_experience: '',
-                    application_languages_spoken: [],
-                    application_about: '',
-                    application_legal_professionals: [],
-                    application_fees: 0,
-                    application_address: {},
-                    application_latitude: 0,
-                    application_longitude: 0,
-                    application_court1: '',
-                    application_court2: '',
-                    application_image: null,
-                    application_license_certificate: null,
-                    application_birth_certificate: null,
-                    application_legal_professionals_certificate: []
-                });
-                setPasswordConfirm('');
-                setCurrentStep(0);
-            } else {
-                toast.error(response.data.message || 'Failed to submit application');
-            }
-        } catch (error) {
-            console.error('Submission error:', error);
-            toast.error(error.response?.data?.message || 'Network error. Please try again.');
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -949,10 +1077,11 @@ const RegisterLawyer = () => {
                             <button
                                 onClick={prevStep}
                                 disabled={currentStep === 0 || isSubmitting}
-                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${currentStep === 0 || isSubmitting
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-gray-400'
-                                    }`}
+                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                                    currentStep === 0 || isSubmitting
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-gray-400'
+                                }`}
                             >
                                 <ChevronLeft size={20} className="mr-2" />
                                 Previous
@@ -970,10 +1099,14 @@ const RegisterLawyer = () => {
                             ) : (
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className="flex items-center px-6 py-2 bg-green-600 text-white rounded-md text-sm font-bold hover:bg-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isSubmitting || !otpVerified}
+                                    className={`flex items-center px-6 py-2 rounded-md text-sm font-bold transition-all duration-200 ${
+                                        !otpVerified 
+                                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                    } disabled:opacity-50`}
                                 >
-                                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                                    {isSubmitting ? 'Submitting...' : !otpVerified ? 'Verify Email First' : 'Submit Application'}
                                 </button>
                             )}
                         </div>

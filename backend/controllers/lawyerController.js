@@ -411,6 +411,45 @@ const sendEmailToAdmin = async (req, res) => {
   }
 };
 
+// API to update lawyer online meeting link
+const updateOnlineLink = async (req, res) => {
+  try {
+    const { lawyerId, online_link } = req.body;
+
+    if (!online_link) {
+      return res.json({ success: false, message: "Meeting link is required" });
+    }
+
+    // Basic URL validation
+    try {
+      new URL(online_link);
+    } catch {
+      return res.json({ success: false, message: "Please provide a valid URL" });
+    }
+
+    const updatedLawyer = await lawyerModel.findByIdAndUpdate(
+      lawyerId,
+      { online_link },
+      { new: true, select: '-password' }
+    );
+
+    if (!updatedLawyer) {
+      return res.json({ success: false, message: "Lawyer not found" });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Online meeting link updated successfully",
+      profileData: updatedLawyer 
+    });
+
+  } catch (error) {
+    console.error("Update online link error:", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+
 export {
   changeAvailability,
   lawyerList,
@@ -422,5 +461,6 @@ export {
   lawyerProfile,
   updateLawyerProfile,
   changePassword,
-  sendEmailToAdmin
+  sendEmailToAdmin,
+  updateOnlineLink
 };

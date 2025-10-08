@@ -1,10 +1,15 @@
 import express from "express";
 import { addApplication } from "../controllers/applicationController.js";
 import applicationModel from "../models/applicationModel.js";
-import authAdmin from "../middlewares/authAdmin.js"; // Your admin auth middleware
+import authAdmin from "../middlewares/authAdmin.js";
 import upload from "../middlewares/multer.js";
+import { sendOTP, verifyOTP } from '../controllers/otpController.js'; // FIXED: Import from otpController
 
 const applicationRouter = express.Router();
+
+// OTP Routes
+applicationRouter.post('/send-otp', sendOTP);
+applicationRouter.post('/verify-otp', verifyOTP);
 
 // Route for submitting application with file uploads
 applicationRouter.post(

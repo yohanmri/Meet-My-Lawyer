@@ -237,3 +237,4 @@ const addApplication = async (req, res) => {
 };
 
 export { addApplication };
+export { sendOTP, verifyOTP } from './otpController.js';

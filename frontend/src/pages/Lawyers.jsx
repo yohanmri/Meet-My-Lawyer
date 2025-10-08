@@ -9,6 +9,7 @@ const Lawyers = () => {
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [selectedConsultationMethod, setSelectedConsultationMethod] = useState('')
   const [selectedExperience, setSelectedExperience] = useState('')
+  const [selectedLanguage, setSelectedLanguage] = useState('')
   const [map, setMap] = useState(null)
   const [view, setView] = useState(null)
   const [graphicsLayer, setGraphicsLayer] = useState(null)
@@ -190,7 +191,7 @@ const Lawyers = () => {
       color: [255, 99, 132, 0.3]
     },
     'Monaragala': {
-      center: [81.3354, 6.8731],
+      center: [81.3507, 6.8728],
       bounds: [[81.0, 6.5], [81.7, 7.2]],
       color: [54, 162, 235, 0.3]
     },
@@ -208,6 +209,7 @@ const Lawyers = () => {
 
   const consultationMethods = ['Online', 'Onsite', 'Both']
   const experienceRanges = ['0-2 years', '3-5 years', '6-10 years', '10+ years']
+  const languages = ['Sinhala', 'Tamil', 'English']
 
   // Initialize ArcGIS Map
   useEffect(() => {
@@ -516,6 +518,11 @@ const Lawyers = () => {
       })
     }
 
+    // Filter by language
+    if (selectedLanguage) {
+      filtered = filtered.filter(lawyer => lawyer.languages_spoken?.includes(selectedLanguage))
+    }
+
     setFilterLawyer(filtered)
   }
 
@@ -523,6 +530,7 @@ const Lawyers = () => {
     setSelectedDistrict('')
     setSelectedConsultationMethod('')
     setSelectedExperience('')
+    setSelectedLanguage('')
     navigate('/lawyers')
 
     // Reset map view to show all of Sri Lanka
@@ -551,7 +559,7 @@ const Lawyers = () => {
 
   useEffect(() => {
     applyFilter()
-  }, [lawyers, speciality, selectedDistrict, selectedConsultationMethod, selectedExperience])
+  }, [lawyers, speciality, selectedDistrict, selectedConsultationMethod, selectedExperience, selectedLanguage])
 
   return (
     <div className='min-h-screen bg-[#D8D8E3]'>
@@ -600,25 +608,6 @@ const Lawyers = () => {
               </select>
             </div>
 
-            {/* Consultation Type Filter */}
-            {/* <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Consultation Type
-              </label>
-              <select
-                value={selectedConsultationMethod}
-                onChange={(e) => setSelectedConsultationMethod(e.target.value)}
-                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
-                style={{ backgroundColor: '#D8D8E3' }}
-
-              >
-                <option value="">All Methods</option>
-                {consultationMethods.map((method) => (
-                  <option key={method} value={method}>{method}</option>
-                ))}
-              </select>
-            </div> */}
-
             {/* Experience Filter */}
             <div className="flex-1 min-w-[200px]">
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -634,6 +623,25 @@ const Lawyers = () => {
                 <option value="">All Experience</option>
                 {experienceRanges.map((range) => (
                   <option key={range} value={range}>{range}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Language Filter */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Language
+              </label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="w-full px-4 py-1 text-sm text-gray-700 border border-[#6A0610] rounded-full focus:ring-2 focus:ring-[#6A0610] focus:outline-none"
+                style={{ backgroundColor: '#D8D8E3' }}
+
+              >
+                <option value="">All Languages</option>
+                {languages.map((language) => (
+                  <option key={language} value={language}>{language}</option>
                 ))}
               </select>
             </div>
@@ -707,7 +715,7 @@ const Lawyers = () => {
             </div>
 
             <div className='flex justify-between items-center mb-6 mt-2 pl-2 pr-2'>
-              <div className='max-h-[600px] overflow-y-auto'>
+              <div className='max-h-[658px] overflow-y-auto w-full'>
                 <div className='grid grid-cols-1 sm:grid-cols-4 gap-2'>
                   {filterLawyer.map((item, index) => (
                     <div

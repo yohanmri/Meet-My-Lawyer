@@ -34,15 +34,15 @@ const MailDashboardtoAdmin = () => {
 
   return (
     <div className="m-5 max-h-[90vh] overflow-y-scroll">
-      <h1 className="text-2xl font-semibold mb-6 text-gray-800">Send Message to Admin</h1>
+      <h1 className='mb-3 text-lg font-medium'>Send Message to Admin</h1>
 
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="bg-white  shadow-sm border border-gray-200 p-3">
           
           {/* Info Banner */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200  p-4 mb-6">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-3 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
@@ -64,7 +64,7 @@ const MailDashboardtoAdmin = () => {
               <input
                 type="text"
                 placeholder="Enter the subject of your message"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
@@ -79,7 +79,7 @@ const MailDashboardtoAdmin = () => {
               </label>
               <textarea
                 placeholder="Type your message here... Be clear and specific about your request or inquiry."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                 rows="12"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -94,7 +94,7 @@ const MailDashboardtoAdmin = () => {
             {/* Send Button */}
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 text-white py-3  font-medium hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               disabled={isSending}
             >
               {isSending ? (
